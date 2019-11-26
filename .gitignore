@@ -7,4 +7,5 @@
 *.db
 */client_secret.json
 */credentials.json
-autopts/bot/config.py
+autopts/bot/config.py.idea
+.idea
