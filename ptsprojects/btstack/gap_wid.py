@@ -16,7 +16,7 @@ import copy
 import logging
 import sys
 from pybtp import btp
-from pybtp.types import Prop, Perm, UUID, AdType, UriScheme, bdaddr_reverse
+from pybtp.types import Prop, Perm, UUID, AdType, UriScheme, bdaddr_reverse, OwnAddrType
 import re
 import struct
 from ptsprojects.stack import get_stack
@@ -319,7 +319,7 @@ def hdl_wid_79(desc):
     btp.gap_set_nonconn()
     btp.gap_set_nondiscov()
 
-    btp.gap_adv_ind_on(ad=stack.gap.ad, own_addr_type=Addr.le_non_resolvable_private_address)
+    btp.gap_adv_ind_on(ad=stack.gap.ad, own_addr_type=OwnAddrType.le_non_resolvable_private_address)
 
     return True
 
@@ -331,7 +331,7 @@ def hdl_wid_80(desc):
     btp.gap_set_nonconn()
     btp.gap_set_nondiscov()
 
-    btp.gap_adv_ind_on(ad=stack.gap.ad, own_addr_type=Addr.le_resolvable_private_address)
+    btp.gap_adv_ind_on(ad=stack.gap.ad, own_addr_type=OwnAddrType.le_resolvable_private_address)
 
     return True
 
