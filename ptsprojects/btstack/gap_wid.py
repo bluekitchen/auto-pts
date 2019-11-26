@@ -311,11 +311,19 @@ def hdl_wid_78(desc):
     btp.gap_conn()
     return True
 
-
+# GAP/BROB/BCST/BV-04-C - Non Resolvable Private Address (PTS matches ADV data)
 def hdl_wid_79(desc):
-    return hdl_wid_80(desc)
+    stack = get_stack()
 
+    btp.gap_adv_off()
+    btp.gap_set_nonconn()
+    btp.gap_set_nondiscov()
 
+    btp.gap_adv_ind_on(ad=stack.gap.ad, own_addr_type=Addr.le_non_resolvable_private_address)
+
+    return True
+
+# GAP/BROB/BCST/BV-03-C - Resolvable Private Address
 def hdl_wid_80(desc):
     stack = get_stack()
 
@@ -323,7 +331,7 @@ def hdl_wid_80(desc):
     btp.gap_set_nonconn()
     btp.gap_set_nondiscov()
 
-    btp.gap_adv_ind_on(ad=stack.gap.ad)
+    btp.gap_adv_ind_on(ad=stack.gap.ad, own_addr_type=Addr.le_resolvable_private_address)
 
     return True
 
