@@ -556,6 +556,11 @@ def hdl_wid_144(desc):
     return False
 
 
+def hdl_wid_146(desc):
+    btp.gap_start_discov(transport='classic', mode='general')
+    return True
+
+
 def hdl_wid_148(desc):
     return btp.verify_not_connected(desc)
 
