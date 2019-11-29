@@ -300,6 +300,9 @@ def test_cases(pts):
         ZTestCase("GAP", "GAP/DISC/RPA/BV-01-C",
                   cmds=pre_conditions,
                   generic_wid_hdl=gap_wid_hdl),
+        ZTestCase("GAP", "GAP/IDLE/GIN/BV-01-C",
+                  pre_conditions,
+                  generic_wid_hdl=gap_wid_hdl),
         ZTestCase("GAP", "GAP/IDLE/NAMP/BV-01-C",
                   pre_conditions +
                   [TestFunc(btp.core_reg_svc_gatt),
