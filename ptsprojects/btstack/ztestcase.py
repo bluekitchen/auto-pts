@@ -29,6 +29,9 @@ class ZTestCase(TestCaseLT1):
         super(ZTestCase, self).__init__(*args, ptsproject_name="btstack",
                                         **kwargs)
 
+        # Log test name
+        self.cmds.insert(0, TestFunc(btp.core_log_message, self.name))
+
         # power down
         self.cmds.append(TestFuncCleanUp(btp.gap_set_powered_off))
 
