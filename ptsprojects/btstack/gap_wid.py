@@ -165,6 +165,11 @@ def hdl_wid_40(desc):
     return True
 
 
+def hdl_wid_44(desc):
+    btp.gap_disconn()
+    return True
+
+
 def hdl_wid_46(desc):
     """
     :param desc: Please send an L2CAP Connection Parameter Update request using valid parameters.
@@ -184,10 +189,6 @@ def hdl_wid_46(desc):
                               new_params.conn_latency,
                               new_params.supervision_timeout)
 
-    return True
-
-def hdl_wid_44(desc):
-    btp.gap_disconn()
     return True
 
 
@@ -233,6 +234,8 @@ def hdl_wid_51(desc):
 
 
 def hdl_wid_52(desc):
+    stack = get_stack()
+
     btp.gap_set_gendiscov()
     btp.gap_set_conn();
     
