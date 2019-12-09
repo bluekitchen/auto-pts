@@ -257,6 +257,7 @@ def hdl_wid_54(desc):
 def hdl_wid_55(desc):
     stack = get_stack()
 
+    btp.gap_set_conn()
     btp.gap_set_limdiscov()
 
     btp.gap_adv_ind_on(ad=stack.gap.ad)
@@ -299,6 +300,7 @@ def hdl_wid_59(desc):
 def hdl_wid_72(desc):
     stack = get_stack()
 
+    btp.gap_set_conn()
     btp.gap_set_nondiscov()
 
     btp.gap_adv_ind_on(ad=stack.gap.ad)
@@ -314,6 +316,7 @@ def hdl_wid_74(desc):
 def hdl_wid_75(desc):
     stack = get_stack()
 
+    btp.gap_set_conn()
     btp.gap_set_gendiscov()
 
     btp.gap_adv_ind_on(ad=stack.gap.ad)
