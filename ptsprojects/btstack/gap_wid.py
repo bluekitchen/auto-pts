@@ -304,6 +304,17 @@ def hdl_wid_59(desc):
     return True
 
 
+def hdl_wid_60(desc):
+    btp.gap_set_conn()
+    btp.gap_set_gendiscov()
+
+    bd_addr = btp.pts_addr_get()
+    bd_addr_type = btp.pts_addr_type_get()
+
+    btp.gap_direct_adv_on(bd_addr, bd_addr_type)
+
+    return True
+
 def hdl_wid_72(desc):
     stack = get_stack()
 
