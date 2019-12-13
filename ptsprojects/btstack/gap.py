@@ -417,18 +417,18 @@ def test_cases(pts):
                   generic_wid_hdl=gap_wid_hdl),
         ZTestCase("GAP", "GAP/BOND/BON/BV-01-C",
                   cmds=pre_conditions + init_gatt_db +
-                  [TestFunc(btp.gap_set_bondable_off), TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
+                  [TestFunc(btp.gap_set_bondable_on), TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
                   generic_wid_hdl=gap_wid_hdl),
         ZTestCase("GAP", "GAP/BOND/BON/BV-02-C",
                   cmds=pre_conditions + [TestFunc(btp.gap_set_bondable_on())],
                   generic_wid_hdl=gap_wid_hdl),
         ZTestCase("GAP", "GAP/BOND/BON/BV-03-C",
                   cmds=pre_conditions + init_gatt_db +
-                  [TestFunc(btp.gap_set_bondable_off()), TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
+                  [TestFunc(btp.gap_set_bondable_on()), TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
                   generic_wid_hdl=gap_wid_hdl),
         ZTestCase("GAP", "GAP/BOND/BON/BV-04-C",
                   cmds=pre_conditions + init_gatt_db +
-                       [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
+                       [TestFunc(btp.gap_set_bondable_on), TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
                   generic_wid_hdl=gap_wid_hdl),
         ZTestCase("GAP", "GAP/SEC/AUT/BV-11-C",
                   cmds=pre_conditions + init_gatt_db +
