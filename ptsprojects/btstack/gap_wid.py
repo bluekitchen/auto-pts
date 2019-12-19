@@ -235,13 +235,7 @@ def hdl_wid_51(desc):
 
 
 def hdl_wid_52(desc):
-    stack = get_stack()
-
-    btp.gap_set_gendiscov()
-    btp.gap_set_conn();
-    
-    btp.gap_adv_ind_on(ad=stack.gap.ad)
-
+    hdl_wid_51(desc)
     return True
 
 
@@ -348,6 +342,7 @@ def hdl_wid_76(desc):
 
 
 def hdl_wid_77(desc):
+    time.sleep(2)
     btp.gap_disconn()
     return True
 
@@ -389,7 +384,15 @@ def hdl_wid_83(desc):
     return True
 
 
+def hdl_wid_84(desc):
+    return True
+
+
 def hdl_wid_85(desc):
+    return True
+
+
+def hdl_wid_89(desc):
     return True
 
 
@@ -487,6 +490,7 @@ def hdl_wid_125(desc):
 
     return True
 
+
 def hdl_wid_127(desc):
     return hdl_wid_46(desc)
 
@@ -514,6 +518,10 @@ def hdl_wid_136(desc):
     return True
 
 
+def hdl_wid_137(desc):
+    return btp.gatts_verify_write_fail(desc)
+
+
 def hdl_wid_138(desc):
     btp.gap_start_discov(transport='le', type='active', mode='observe')
     sleep(10)  # Give some time to discover devices
@@ -523,12 +531,15 @@ def hdl_wid_138(desc):
 
 def hdl_wid_139(desc):
     attrs = btp.gatts_get_attrs(type_uuid='2803')
+    bd_addr = btp.pts_addr_get()
+    bd_addr_type = btp.pts_addr_type_get()
+
     for attr in attrs:
         if not attr:
             continue
 
         (handle, permission, type_uuid) = attr
-        data = btp.gatts_get_attr_val(handle)
+        data = btp.gatts_get_attr_val(bd_addr_type, bd_addr, handle)
         if not data:
             continue
 
@@ -567,12 +578,15 @@ def hdl_wid_143(desc):
 
 def hdl_wid_144(desc):
     attrs = btp.gatts_get_attrs(type_uuid='2803')
+    bd_addr = btp.pts_addr_get()
+    bd_addr_type = btp.pts_addr_type_get()
+
     for attr in attrs:
         if not attr:
             continue
 
         (handle, permission, type_uuid) = attr
-        data = btp.gatts_get_attr_val(handle)
+        data = btp.gatts_get_attr_val(bd_addr_type, bd_addr, handle)
         if not data:
             continue
 
@@ -683,6 +697,9 @@ def hdl_wid_161(desc):
     match = re.findall(r'(0[xX])?([0-9a-fA-F]{4})', desc)
     handle = int(match[0][1], 16)
 
+    bd_addr = btp.pts_addr_get()
+    bd_addr_type = btp.pts_addr_type_get()
+
     attr = btp.gatts_get_attrs(handle, handle)
     if not attr:
         return
@@ -690,7 +707,7 @@ def hdl_wid_161(desc):
     (handle, permission, type_uuid) = attr.pop()
 
     # Check if characteristic has signed write property
-    value = btp.gatts_get_attr_val(handle - 1)
+    value = btp.gatts_get_attr_val(bd_addr_type, bd_addr, handle - 1)
     if not value:
         return
 
@@ -708,7 +725,7 @@ def hdl_wid_161(desc):
 
     chrc_uuid = btp.btp2uuid(uuid_len, chrc_uuid)
 
-    value = btp.gatts_get_attr_val(handle)
+    value = btp.gatts_get_attr_val(bd_addr_type, bd_addr, handle)
     if not value:
         return
 
@@ -729,11 +746,10 @@ def hdl_wid_173(desc):
     stack = get_stack()
 
     # Prepare space for URI
-    stack.gap.sd.clear()
-    stack.gap.sd[AdType.uri] = UriScheme.https + \
-                               hexlify('github.com/intel/auto-pts')
+    stack.gap.ad.clear()
+    stack.gap.ad[AdType.uri] = stack.gap.uri
 
-    btp.gap_adv_ind_on(sd=stack.gap.sd)
+    btp.gap_adv_ind_on(ad=stack.gap.ad)
 
     return True
 
@@ -755,11 +771,15 @@ def hdl_wid_178(desc):
     return True
 
 
+def hdl_wid_179(desc):
+    return True
+
+
 def hdl_wid_204(desc):
     btp.gap_start_discov(type='passive', mode='observe')
     sleep(10)
     btp.gap_stop_discov()
-    return btp.check_discov_results()
+    return btp.check_discov_results(addr_type=0x02)
 
 
 def hdl_wid_1002(desc):
