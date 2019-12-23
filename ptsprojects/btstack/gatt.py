@@ -143,6 +143,7 @@ def test_cases_server(pts):
     stack = get_stack()
 
     pre_conditions = [TestFunc(btp.core_reg_svc_gap),
+                      TestFunc(btp.core_reg_svc_gatt),
                       TestFunc(btp.gap_set_powered_on),
                       TestFunc(btp.gap_read_ctrl_info),
                       TestFunc(lambda: pts.update_pixit_param(
@@ -158,6 +159,7 @@ def test_cases_server(pts):
 
     pre_conditions_1 = [TestFunc(btp.core_reg_svc_gap),
                         TestFunc(btp.core_reg_svc_gatt),
+                        TestFunc(btp.gap_set_powered_on),
                         TestFunc(btp.gap_read_ctrl_info),
                         TestFunc(lambda: pts.update_pixit_param(
                             "GATT", "TSPX_bd_addr_iut",
@@ -539,6 +541,7 @@ def test_cases_client(pts):
     stack = get_stack()
 
     pre_conditions = [TestFunc(btp.core_reg_svc_gap),
+                      TestFunc(btp.gap_set_powered_on),
                       TestFunc(btp.gap_read_ctrl_info),
                       TestFunc(lambda: pts.update_pixit_param(
                           "GATT", "TSPX_bd_addr_iut",
