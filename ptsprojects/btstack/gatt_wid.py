@@ -650,7 +650,7 @@ def hdl_wid_69(desc):
         return False
 
     handle = int(MMI.args[0], 16)
-    size = int(MMI.args[1], 16)
+    size = int(MMI.args[1])
 
     btp.gattc_write_long(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
                          handle, 0, '12', size)
