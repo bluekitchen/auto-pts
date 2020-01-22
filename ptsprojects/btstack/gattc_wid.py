@@ -38,11 +38,10 @@ def gattc_wid_hdl(wid, description, test_case_name):
         return gatt_wid_hdl(wid, description, test_case_name)
 
 
-def hdl_wid_24(desc):
+def hdl_wid_17(desc):
     return btp.verify_description(desc)
 
-
-def hdl_wid_17(desc):
+def hdl_wid_24(desc):
     return btp.verify_description(desc)
 
 def hdl_wid_48(desc):
@@ -64,3 +63,6 @@ def hdl_wid_48(desc):
         pass
 
     return True
+
+def hdl_wid_52(desc):
+    return btp.verify_description(desc)
