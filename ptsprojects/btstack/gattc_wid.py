@@ -14,7 +14,10 @@
 #
 
 import logging
+import socket
 import sys
+
+from ptsprojects.testcase import MMI
 from pybtp import btp
 
 from gatt_wid import gatt_wid_hdl
@@ -41,3 +44,23 @@ def hdl_wid_24(desc):
 
 def hdl_wid_17(desc):
     return btp.verify_description(desc)
+
+def hdl_wid_48(desc):
+    MMI.reset()
+    MMI.parse_description(desc)
+
+    hdl = MMI.args[0]
+
+    if not hdl:
+        logging.debug("parsing error")
+        return False
+
+    btp.gattc_read_long(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
+                        hdl, 0, 1)
+
+    try:
+        btp.gattc_read_long_rsp(True, True)
+    except socket.timeout:
+        pass
+
+    return True
