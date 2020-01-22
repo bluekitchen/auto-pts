@@ -20,6 +20,7 @@
 import os
 import sys
 from distutils.spawn import find_executable
+import shutil
 
 import autoptsclient_common as autoptsclient
 import ptsprojects.btstack as autoprojects
@@ -107,3 +108,6 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         os._exit(16)
+
+    # archive hci_dump.pklg
+    shutil.move("/tmp/hci_dump.pklg", "btp_client.pklg")
