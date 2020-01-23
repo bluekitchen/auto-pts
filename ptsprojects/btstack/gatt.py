@@ -550,6 +550,7 @@ def test_cases_client(pts):
                       TestFunc(btp.set_pts_addr, pts_bd_addr, Addr.le_public)]
 
     enable_bonding = [TestFunc(btp.gap_set_bondable_on), TestFunc(btp.gap_set_io_cap, IOCap.display_only)]
+    delete_bonding = [TestFunc(btp.gap_unpair)]
 
     test_cases = [
         ZTestCase("GATT", "GATT/CL/GAC/BV-01-C",
@@ -592,7 +593,7 @@ def test_cases_client(pts):
                   cmds=pre_conditions,
                   generic_wid_hdl=gatt_wid_hdl),
         ZTestCase("GATT", "GATT/CL/GAR/BI-06-C",
-                  cmds=pre_conditions,
+                  cmds=pre_conditions + delete_bonding,
                   generic_wid_hdl=gatt_wid_hdl),
         ZTestCase("GATT", "GATT/CL/GAR/BI-07-C",
                   cmds=pre_conditions,
@@ -616,7 +617,7 @@ def test_cases_client(pts):
                   cmds=pre_conditions,
                   generic_wid_hdl=gatt_wid_hdl),
         ZTestCase("GATT", "GATT/CL/GAR/BI-13-C",
-                  cmds=pre_conditions,
+                  cmds=pre_conditions + delete_bonding,
                   generic_wid_hdl=gatt_wid_hdl),
         ZTestCase("GATT", "GATT/CL/GAR/BI-14-C",
                   cmds=pre_conditions,
@@ -688,7 +689,7 @@ def test_cases_client(pts):
                   pre_conditions,
                   generic_wid_hdl=gatt_wid_hdl),
         ZTestCase("GATT", "GATT/CL/GAW/BI-06-C",
-                  pre_conditions,
+                  pre_conditions + delete_bonding,
                   generic_wid_hdl=gatt_wid_hdl),
         ZTestCase("GATT", "GATT/CL/GAW/BV-05-C",
                   pre_conditions,
@@ -709,7 +710,7 @@ def test_cases_client(pts):
                   pre_conditions,
                   generic_wid_hdl=gatt_wid_hdl),
         ZTestCase("GATT", "GATT/CL/GAW/BI-13-C",
-                  pre_conditions,
+                  pre_conditions + delete_bonding,
                   generic_wid_hdl=gatt_wid_hdl),
         ZTestCase("GATT", "GATT/CL/GAW/BV-08-C",
                   pre_conditions,
