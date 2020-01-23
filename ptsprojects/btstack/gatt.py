@@ -549,6 +549,8 @@ def test_cases_client(pts):
                       TestFunc(btp.core_reg_svc_gatt),
                       TestFunc(btp.set_pts_addr, pts_bd_addr, Addr.le_public)]
 
+    enable_bonding = [TestFunc(btp.gap_set_bondable_on), TestFunc(btp.gap_set_io_cap, IOCap.display_only)]
+
     test_cases = [
         ZTestCase("GATT", "GATT/CL/GAC/BV-01-C",
                   pre_conditions,
@@ -668,7 +670,7 @@ def test_cases_client(pts):
                   generic_wid_hdl=gatt_wid_hdl),
         # PTS issue #15965
         ZTestCase("GATT", "GATT/CL/GAW/BV-02-C",
-                  pre_conditions,
+                  pre_conditions + enable_bonding,
                   generic_wid_hdl=gatt_wid_hdl),
         ZTestCase("GATT", "GATT/CL/GAW/BV-03-C",
                   pre_conditions,
