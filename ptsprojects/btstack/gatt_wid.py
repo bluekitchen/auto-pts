@@ -14,17 +14,18 @@
 #
 
 import logging
-import sys
-from pybtp import btp
 import re
-import struct
-from binascii import hexlify
-from pybtp.types import Prop, Perm, IOCap, UUID
-from ptsprojects.stack import get_stack, GattPrimary, GattService, GattSecondary, GattServiceIncluded, \
-    GattCharacteristic, GattCharacteristicDescriptor, GattDB
-from time import sleep
-from ptsprojects.testcase import MMI
 import socket
+import struct
+import sys
+import time
+from binascii import hexlify
+from time import sleep
+
+from ptsprojects.stack import get_stack
+from ptsprojects.testcase import MMI
+from pybtp import btp
+from pybtp.types import Prop, Perm, IOCap
 
 log = logging.debug
 
@@ -41,53 +42,6 @@ def gatt_wid_hdl(wid, description, test_case_name):
         logging.exception(e.message)
 
 
-def gatt_server_fetch_db():
-    db = GattDB()
-
-    attrs = btp.gatts_get_attrs()
-    for attr in attrs:
-        handle, perm, type_uuid = attr
-
-        attr_val = btp.gatts_get_attr_val(handle)
-        if not attr_val:
-            logging.debug("cannot read value %r", handle)
-            continue
-
-        att_rsp, val_len, val = attr_val
-
-        if type_uuid == '2800' or type_uuid == '2801':
-            uuid = btp.btp2uuid(val_len, val)
-
-            if type_uuid == '2800':
-                db.attr_add(handle, GattPrimary(handle, perm, uuid, att_rsp))
-            else:
-                db.attr_add(handle, GattSecondary(handle, perm, uuid, att_rsp))
-        elif type_uuid == '2803':
-
-            hdr = '<BH'
-            hdr_len = struct.calcsize(hdr)
-            uuid_len = val_len - hdr_len
-
-            prop, value_handle, uuid = struct.unpack("<BH%ds" % uuid_len, val)
-            uuid = btp.btp2uuid(uuid_len, uuid)
-
-            db.attr_add(handle, GattCharacteristic(handle, perm, uuid, att_rsp, prop, value_handle))
-        elif type_uuid == '2802':
-            hdr = "<HH"
-            hdr_len = struct.calcsize(hdr)
-            uuid_len = val_len - hdr_len
-            incl_svc_hdl, end_grp_hdl, uuid = struct.unpack(hdr + "%ds" % uuid_len, val)
-            uuid = btp.btp2uuid(uuid_len, uuid)
-
-            db.attr_add(handle, GattServiceIncluded(handle, perm, uuid, att_rsp, incl_svc_hdl, end_grp_hdl))
-        else:
-            uuid = type_uuid.replace("0x", "").replace("-", "").upper()
-
-            db.attr_add(handle, GattCharacteristicDescriptor(handle, perm, uuid, att_rsp, val))
-
-    return db
-
-
 # wid handlers section begin
 def hdl_wid_1(desc):
     btp.gap_set_conn()
@@ -102,7 +56,8 @@ def hdl_wid_2(desc):
 
 
 def hdl_wid_3(desc):
-    btp.gap_disconn(btp.pts_addr_get(None), btp.pts_addr_type_get(None))
+    time.sleep(2)
+    btp.gap_disconn(btp.pts_addr_get(), btp.pts_addr_type_get())
     return True
 
 
@@ -111,12 +66,10 @@ def hdl_wid_4(desc):
     return True
 
 
-def hdl_wid_10(dec):
-    # Send Discover All Primary Services Request
-    btp.gattc_disc_all_prim(btp.pts_addr_type_get(None), btp.pts_addr_get(None))
-
-    # Read Discover All Primary Services Response and store it for later use.
-    btp.gattc_disc_all_prim_rsp(True)
+def hdl_wid_10(desc):
+    btp.gattc_disc_all_prim(btp.pts_addr_type_get(),
+                            btp.pts_addr_get())
+    btp.gattc_disc_all_prim_rsp()
     return True
 
 
@@ -125,15 +78,14 @@ def hdl_wid_11(desc):
 
 
 def hdl_wid_12(desc):
-    btp.gattc_exchange_mtu(btp.pts_addr_type_get(None),btp.pts_addr_get(None))
+    btp.gattc_exchange_mtu(btp.pts_addr_type_get(), btp.pts_addr_get())
+    sleep(10)
     return True
 
 
 def hdl_wid_15(desc):
-    btp.gattc_find_included(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
-                            '0001', 'FFFF')
-    
-    btp.gattc_find_included_rsp(True)
+    btp.gattc_find_included(btp.pts_addr_type_get(), btp.pts_addr_get(),
+                            None, None)
     return True
 
 
@@ -144,44 +96,36 @@ def hdl_wid_16(desc):
 def hdl_wid_17(desc):
     MMI.reset()
     MMI.parse_description(desc)
-    pts_services = MMI.args
-    if not pts_services:
-        logging.error("%s parsing error", hdl_wid_17.__name__)
-        return False
 
     iut_services = []
 
-    # Get all primary services
     attrs = btp.gatts_get_attrs(type_uuid='2800')
     for attr in attrs:
         handle, perm, type_uuid = attr
-        (_, uuid_len, uuid) = btp.gatts_get_attr_val(handle)
+        (_, uuid_len, uuid) = btp.gatts_get_attr_val(
+            btp.pts_addr_type_get(),
+            btp.pts_addr_get(), handle)
         uuid = btp.btp2uuid(uuid_len, uuid)
         iut_services.append(uuid)
 
-    # Verification
-    for service in pts_services:
-        if service in iut_services:
-            iut_services.remove(service)
-            logging.debug("Service %s found", service)
-            continue
-        else:
-            logging.error("Service %s not found", service)
-            return False
-    return True
+    if iut_services == MMI.args:
+        return True
+    else:
+        return False
 
 
 def hdl_wid_18(desc):
     MMI.reset()
-    MMI.parse_description(desc)    
+    MMI.parse_description(desc)
 
     uuid = MMI.args[0]
 
     if not uuid:
         logging.error("%s parsing error", hdl_wid_18.__name__)
         return False
-    
-    btp.gattc_disc_prim_uuid(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
+
+    btp.gattc_disc_prim_uuid(btp.pts_addr_type_get(),
+                             btp.pts_addr_get(),
                              uuid)
 
     btp.gattc_disc_prim_uuid_rsp(True)
@@ -200,17 +144,76 @@ def hdl_wid_21(desc):
 def hdl_wid_20(desc):
     MMI.reset()
     MMI.parse_description(desc)
-    
+
     uuid = MMI.args[0]
 
     if not uuid:
         logging.error("%s parsing error", hdl_wid_20.__name__)
         return False
 
-    btp.gattc_disc_prim_uuid(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
+    btp.gattc_disc_prim_uuid(btp.pts_addr_type_get(),
+                             btp.pts_addr_get(),
                              uuid)
-    
+
     btp.gattc_disc_prim_uuid_rsp(True)
+
+    return True
+
+
+def hdl_wid_22(desc):
+    MMI.reset()
+    MMI.parse_description(desc)
+
+    parsed_args = []
+
+    for arg in MMI.args:
+        parsed_args.append(filter(lambda char: char != "-", arg))
+
+    handles = []
+    uuids = []
+
+    # Extract UUID's from parsed arguments
+    uuids_from_parse = parsed_args[::3]
+
+    # Delete unwanted UUID values
+    del parsed_args[0::3]
+    parsed_handles = parsed_args
+
+    # Convert remaining arguments to integers
+    parsed_handles = [int(arg, 16) for arg in parsed_handles]
+
+    # Increment every 2th handle
+    parsed_handles[1::2] = [arg + 1 for arg in parsed_handles[1::2]]
+
+    # Get all primary services
+    attrs = btp.gatts_get_attrs(type_uuid='2800')
+    for attr in attrs:
+        start_handle, perm, type_uuid = attr
+
+        val = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                     btp.pts_addr_get(), start_handle)
+        if not val:
+            continue
+
+        (_, uuid_len, uuid) = val
+
+        uuids.append(str(btp.btp2uuid(uuid_len, uuid)))
+        handles.append(start_handle)
+
+    for uuid in uuids_from_parse:
+        if uuid in uuids_from_parse:
+            logging.debug("UUUID %r present", uuid)
+            continue
+        else:
+            logging.debug("UUID %r not present", uuid)
+            return False
+    for handle in parsed_handles:
+        if handle in parsed_handles:
+            logging.debug("Handle %r present", handle)
+            continue
+        else:
+            logging.debug("Handle $r not present", handle)
+            return False
 
     return True
 
@@ -240,7 +243,8 @@ def hdl_wid_23(desc):
             iut_services.append(iut_service)
             iut_service = None
 
-        val = btp.gatts_get_attr_val(start_handle)
+        val = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                     btp.pts_addr_get(), start_handle)
         if not val:
             continue
 
@@ -263,30 +267,7 @@ def hdl_wid_23(desc):
 
 
 def hdl_wid_24(desc):
-    MMI.reset()
-    MMI.parse_description(desc)
-
-    db = gatt_server_fetch_db()
-
-    if MMI.args:
-        incl_handle = int(MMI.args[1], 16)
-        attr = db.attr_lookup_handle(incl_handle)
-        if attr is None or not isinstance(attr, GattService):
-            logging.error("service not found")
-            return False
-
-        incl_uuid = attr.uuid
-        attr = db.attr_lookup_handle(int(MMI.args[0], 16))
-        if attr is None or not isinstance(attr, GattServiceIncluded):
-            logging.error("included not found")
-            return False
-
-        if attr.end_grp_hdl != int(MMI.args[2], 16) \
-                or incl_uuid != MMI.args[3]:
-            logging.error("end group handle not found")
-            return False
-
-        return True
+    return btp.verify_description(desc)
 
 
 def hdl_wid_25(desc):
@@ -295,7 +276,7 @@ def hdl_wid_25(desc):
 
     pts_chrc_uuid = MMI.args[0]
     pts_chrc_handles = [int(MMI.args[1], 16), int(MMI.args[2], 16),
-                        int(MMI.args[3], 16)]
+                        int(MMI.args[3], 16), int(MMI.args[4], 16)]
 
     iut_start_handle = None
     iut_end_handle = None
@@ -309,7 +290,8 @@ def hdl_wid_25(desc):
             iut_end_handle = handle - 1
             break
 
-        svc_val = btp.gatts_get_attr_val(handle)
+        svc_val = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                         btp.pts_addr_get(), handle)
         if not svc_val:
             continue
 
@@ -351,8 +333,8 @@ def hdl_wid_27(desc):
     if not start_hdl or not end_hdl:
         logging.error("parsing error")
         return False
-    
-    btp.gattc_disc_all_chrc(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
+
+    btp.gattc_disc_all_chrc(btp.pts_addr_type_get(), btp.pts_addr_get(),
                             start_hdl, end_hdl)
 
     btp.gattc_disc_all_chrc_rsp(True)
@@ -376,7 +358,8 @@ def hdl_wid_29(desc):
         logging.error("parsing error")
         return False
 
-    btp.gattc_disc_chrc_uuid(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
+    btp.gattc_disc_chrc_uuid(btp.pts_addr_type_get(),
+                             btp.pts_addr_get(),
                              start_hdl, end_hdl, uuid)
 
     btp.gattc_disc_chrc_uuid_rsp(True)
@@ -399,8 +382,8 @@ def hdl_wid_31(desc):
         logging.error("parsing error")
         return False
 
-    btp.gattc_disc_all_desc(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
-                         start_hdl, end_hdl)
+    btp.gattc_disc_all_desc(btp.pts_addr_type_get(), btp.pts_addr_get(),
+                            start_hdl, end_hdl)
 
     btp.gattc_disc_all_desc_rsp(True)
 
@@ -426,15 +409,16 @@ def hdl_wid_41(desc):
 def hdl_wid_42(desc):
     return btp.verify_description(desc)
 
+
 def hdl_wid_43(desc):
     return btp.verify_description(desc)
 
 
-def hdl_wid_44(desc):
+def hdl_wid_45(desc):
     return btp.verify_description(desc)
 
 
-def hdl_wid_45(desc):
+def hdl_wid_44(desc):
     return btp.verify_description(desc)
 
 
@@ -456,7 +440,7 @@ def hdl_wid_48(desc):
         logging.debug("parsing error")
         return False
 
-    btp.gattc_read(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
+    btp.gattc_read(btp.pts_addr_type_get(), btp.pts_addr_get(),
                    hdl)
 
     try:
@@ -468,6 +452,7 @@ def hdl_wid_48(desc):
 
 
 def hdl_wid_49(desc):
+    sleep(30)
     return True
 
 
@@ -479,21 +464,10 @@ def hdl_wid_51(desc):
     MMI.reset()
     MMI.parse_description(desc)
 
-    uuid = MMI.args[0]
-    start_hdl = MMI.args[1]
-    end_hdl = MMI.args[2]
+    btp.gattc_read_uuid(btp.pts_addr_type_get(), btp.pts_addr_get(),
+                        MMI.args[1], MMI.args[2], MMI.args[0])
 
-    if not uuid or not start_hdl or not end_hdl:
-        logging.debug("parsing error")
-        return False
-
-    btp.gattc_read_uuid(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
-                        start_hdl, end_hdl, uuid)
-
-    try:
-        btp.gattc_read_uuid_rsp(True, True)
-    except socket.timeout:
-        pass
+    btp.gattc_read_uuid_rsp(True)
 
     return True
 
@@ -503,26 +477,16 @@ def hdl_wid_52(desc):
     MMI.parse_description(desc)
 
     handle = int(MMI.args[0], 16)
-    value = MMI.args[1]
 
-    db = gatt_server_fetch_db()
-    attr = db.attr_lookup_handle(handle)
-    if attr is None:
-        return False
+    _, _, value = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                         btp.pts_addr_get(), handle)
 
-    if not isinstance(attr, GattCharacteristicDescriptor):
-        return False
+    value_read = hexlify(value)
 
-    if attr.uuid == UUID.CEP:
-        (value_read,) = struct.unpack("<H", attr.value)
-        value_read = '{0:04x}'.format(value_read, 'x')
+    if value_read == MMI.args[1]:
+        return True
     else:
-        value_read = hexlify(attr.value).upper()
-
-    if value_read != value:
         return False
-
-    return True
 
 
 def hdl_wid_53(desc):
@@ -535,10 +499,10 @@ def hdl_wid_53(desc):
     if not read_hdl or not offset:
         logging.debug("parsing error")
         return False
-    
-    btp.gattc_read_long(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
-                         read_hdl, offset, 1)
-    
+
+    btp.gattc_read_long(btp.pts_addr_type_get(), btp.pts_addr_get(),
+                        read_hdl, offset, 1)
+
     btp.gattc_read_long_rsp(True, False)
 
     return True
@@ -554,17 +518,21 @@ def hdl_wid_56(desc):
 
     if not MMI.args or len(MMI.args) != 3:
         logging.error("parsing error")
-    
+
     handle1 = MMI.args[0]
     handle2 = MMI.args[1]
     values = MMI.args[2]
 
     values_read = ""
 
-    att_rsp, value_len, value = btp.gatts_get_attr_val(handle1)
+    att_rsp, value_len, value = btp.gatts_get_attr_val(
+        btp.pts_addr_type_get(),
+        btp.pts_addr_get(), handle1)
     values_read += hexlify(value)
 
-    att_rsp, value_len, value = btp.gatts_get_attr_val(handle2)
+    att_rsp, value_len, value = btp.gatts_get_attr_val(
+        btp.pts_addr_type_get(),
+        btp.pts_addr_get(), handle2)
     values_read += hexlify(value)
 
     if values_read.upper() != values.upper():
@@ -584,9 +552,9 @@ def hdl_wid_57(desc):
         logging.error("parsing error")
         return False
 
-    btp.gattc_read_multiple(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
+    btp.gattc_read_multiple(btp.pts_addr_type_get(), btp.pts_addr_get(),
                             hdl1, hdl2)
-    
+
     btp.gattc_read_multiple_rsp(True, True)
 
     return True
@@ -597,12 +565,12 @@ def hdl_wid_58(desc):
     MMI.parse_description(desc)
 
     hdl = MMI.args[0]
-    
+
     if not hdl:
         logging.error("parsing error")
         return False
 
-    btp.gattc_read(btp.pts_addr_type_get(None), btp.pts_addr_get(None), hdl)
+    btp.gattc_read(btp.pts_addr_type_get(), btp.pts_addr_get(), hdl)
 
     btp.gattc_read_rsp(True, True)
 
@@ -652,8 +620,9 @@ def hdl_wid_69(desc):
     handle = int(MMI.args[0], 16)
     size = int(MMI.args[1])
 
-    btp.gattc_write_long(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
+    btp.gattc_write_long(btp.pts_addr_type_get(), btp.pts_addr_get(),
                          handle, 0, '12', size)
+
     btp.gattc_write_long_rsp()
 
     return True
@@ -669,8 +638,8 @@ def hdl_wid_70(desc):
     handle = params[0]
     size = int(params[1])
 
-    btp.gattc_write_without_rsp(btp.pts_addr_type_get(None),
-                                btp.pts_addr_get(None), handle, '12', size)
+    btp.gattc_write_without_rsp(btp.pts_addr_type_get(),
+                                btp.pts_addr_get(), handle, '12', size)
 
     return True
 
@@ -682,14 +651,14 @@ def hdl_wid_71(desc):
 def hdl_wid_72(desc):
     MMI.reset()
     MMI.parse_description(desc)
-    
+
     hdl = MMI.args[0]
 
     if not hdl:
         logging.error("parsing error")
         return False
 
-    btp.gattc_signed_write(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
+    btp.gattc_signed_write(btp.pts_addr_type_get(), btp.pts_addr_get(),
                            hdl, '12', None)
 
     return True
@@ -706,7 +675,7 @@ def hdl_wid_74(desc):
         logging.error("parsing error")
         return False
 
-    btp.gattc_write(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
+    btp.gattc_write(btp.pts_addr_type_get(), btp.pts_addr_get(),
                     hdl, '12', size)
 
     try:
@@ -724,32 +693,32 @@ def hdl_wid_75(desc):
         logging.debug("parsing error")
 
     handle = int(MMI.args[0], 16)
-    value = int(MMI.args[1], 16)
+    value = MMI.args[1]
 
-    stack = get_stack()
+    sleep(5)
 
-    val = stack.gatt.wait_attr_value_changed(handle, 10)
-    if val is None:
+    attr = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                  btp.pts_addr_get(), handle)
+
+    _, _, val = attr
+
+    parsed_val = hexlify(val).upper()
+
+    if value == parsed_val:
+        return True
+    else:
         return False
-
-    val = int(val, 16)
-
-    return val == value
 
 
 def hdl_wid_76(desc):
-    pattern = re.compile("'([0-9a-fA-F]+)'")
-    params = pattern.findall(desc)
-    if not params:
-        logging.error("parsing error")
-        return False
+    MMI.reset()
+    MMI.parse_description(desc)
 
-    handle = params[0]
-    size = int(params[1])
+    btp.gattc_write_reliable(btp.pts_addr_type_get(),
+                             btp.pts_addr_get(),
+                             MMI.args[0], 0, '12', MMI.args[1])
 
-    btp.gattc_write_long(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
-                         handle, 0, '12', size)
-    btp.gattc_write_long_rsp(True)
+    btp.gattc_write_reliable_rsp(True)
 
     return True
 
@@ -765,8 +734,8 @@ def hdl_wid_77(desc):
         logging.error("parsing error")
         return False
 
-    btp.gattc_write_long(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
-                         hdl, offset, '12', None)
+    btp.gattc_write_long(btp.pts_addr_type_get(), btp.pts_addr_get(),
+                         hdl, offset, '12', offset + 2)
 
     btp.gattc_write_long_rsp(True)
 
@@ -777,7 +746,6 @@ def hdl_wid_80(desc):
     MMI.reset()
     MMI.parse_description(desc)
 
-
     hdl = MMI.args[0]
     val_mtp = MMI.args[1]
 
@@ -785,8 +753,8 @@ def hdl_wid_80(desc):
         logging.error("parsing error")
         return False
 
-    btp.gattc_write(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
-                         hdl, '1234', val_mtp)
+    btp.gattc_write(btp.pts_addr_type_get(), btp.pts_addr_get(),
+                    hdl, '1234', val_mtp)
 
     btp.gattc_write_rsp(True)
 
@@ -798,24 +766,27 @@ def hdl_wid_81(desc):
     MMI.parse_description(desc)
 
     hdl = MMI.args[0]
-    val_mtp = MMI.args[1]
+    val_mtp = int(MMI.args[1], 16)
 
     if not hdl or not val_mtp:
         logging.error("parsing error")
         return False
 
-    btp.gattc_write_long(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
+    btp.gattc_write_long(btp.pts_addr_type_get(), btp.pts_addr_get(),
                          hdl, 0, '1234', val_mtp)
 
     btp.gattc_write_long_rsp(True)
 
     return True
 
+
 def hdl_wid_82(desc):
     return True
 
 
 def hdl_wid_90(desc):
+    btp.gattc_notification_ev(btp.pts_addr_get(),
+                              btp.pts_addr_type_get(), 1)
     return True
 
 
@@ -828,33 +799,14 @@ def hdl_wid_91(desc):
 
     handle = params[0]
 
-    btp.gattc_cfg_notify(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
+    btp.gattc_cfg_notify(btp.pts_addr_type_get(), btp.pts_addr_get(),
                          1, handle)
 
     return True
 
 
 def hdl_wid_92(desc):
-    # This pattern is matching Notification handle
-    pattern = re.compile("(handle)\s?=\s?'([0-9a-fA-F]+)'")
-    params = pattern.findall(desc)
-    if not params:
-        logging.error("parsing error")
-        return False
-
-    params = dict(params)
-    handle = int(params.get('handle'), 16)
-    att_rsp, value_len, value = btp.gatts_get_attr_val(handle)
-
-    if att_rsp:
-        logging.debug("cannot read chrc value")
-        return False
-
-    # delay to let the PTS subscribe for notifications
     sleep(2)
-
-    btp.gatts_set_val(handle, hexlify(value)),
-
     return True
 
 
@@ -872,25 +824,7 @@ def hdl_wid_97(desc):
 
 
 def hdl_wid_98(desc):
-    MMI.reset()
-    MMI.parse_description(desc)
-    if not MMI.args:
-        logging.error("parsing error")
-        return False
-
-    handle = int(MMI.args[0], 16)
-
-    att_rsp, value_len, value = btp.gatts_get_attr_val(handle)
-
-    if att_rsp:
-        logging.debug("cannot read chrc value")
-        return False
-
-    # delay to let the PTS subscribe for notifications
-    sleep(2)
-
-    btp.gatts_set_val(handle, hexlify(value)),
-
+    sleep(5)
     return True
 
 
@@ -903,115 +837,11 @@ def hdl_wid_99(desc):
 
     handle = params[0]
 
-    btp.gattc_cfg_indicate(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
-                         1, handle)
+    btp.gattc_cfg_indicate(btp.pts_addr_type_get(), btp.pts_addr_get(),
+                           1, handle)
 
-    btp.gattc_notification_ev(btp.pts_addr_get(None),
-                              btp.pts_addr_type_get(None), 2)
-
-    return True
-
-
-def hdl_wid_102(desc):
-    pattern = re.compile("(ATTRIBUTE\sHANDLE|"
-                         "INCLUDED\sSERVICE\sATTRIBUTE\sHANDLE|"
-                         "END\sGROUP\sHANDLE|"
-                         "UUID|"
-                         "PROPERTIES|"
-                         "HANDLE|"
-                         "SECONDARY\sSERVICE)\s?=\s?'([0-9a-fA-F]+)'", re.IGNORECASE)
-    params = pattern.findall(desc)
-    if not params:
-        logging.error("parsing error")
-        return False
-
-    params = dict([(k.upper(), v) for k, v in params])
-    db = gatt_server_fetch_db()
-
-    if "INCLUDED SERVICE ATTRIBUTE HANDLE" in params:
-        incl_handle = int(params.get('INCLUDED SERVICE ATTRIBUTE HANDLE'), 16)
-        attr = db.attr_lookup_handle(incl_handle)
-        if attr is None or not isinstance(attr, GattService):
-            logging.error("service not found")
-            return False
-
-        incl_uuid = attr.uuid
-        attr = db.attr_lookup_handle(int(params.get('ATTRIBUTE HANDLE'), 16))
-        if attr is None or not isinstance(attr, GattServiceIncluded):
-            logging.error("included not found")
-            return False
-
-        if attr.end_grp_hdl != int(params.get('END GROUP HANDLE'), 16) \
-                or incl_uuid != params.get('UUID').upper():
-            return False
-
-        return True
-
-    if "PROPERTIES" in params:
-        attr_handle = int(params.get('ATTRIBUTE HANDLE'), 16)
-        attr = db.attr_lookup_handle(attr_handle)
-        if attr is None or not isinstance(attr, GattCharacteristic):
-            logging.error("characteristic not found")
-            return False
-
-        if attr.prop != int(params.get('PROPERTIES'), 16) \
-                or attr.value_handle != int(params.get('HANDLE'), 16) \
-                or attr.uuid != params.get('UUID').upper():
-            return False
-
-        return True
-
-    if "SECONDARY SERVICE" in params:
-        attr_handle = int(params.get('ATTRIBUTE HANDLE'), 16)
-        attr = db.attr_lookup_handle(attr_handle)
-        if attr is None:
-            logging.error("characteristic not found")
-            return False
-
-        if not isinstance(attr, GattSecondary) or \
-                        attr.uuid != params.get('SECONDARY SERVICE').upper():
-            return False
-
-        return True
-
-    return False
-
-
-def hdl_wid_104(desc):
-    pattern = re.compile("(ATTRIBUTE\sHANDLE|"
-                         "VALUE|"
-                         "FORMAT|"
-                         "EXPONENT|"
-                         "UINT|"
-                         "NAMESPACE|"
-                         "DESCRIPTION)\s?=\s?'?([0-9a-fA-F]+)'?", re.IGNORECASE)
-    params = pattern.findall(desc)
-    if not params:
-        logging.error("parsing error")
-        return False
-
-    params = dict([(k.upper(), v) for k, v in params])
-    db = gatt_server_fetch_db()
-
-    attr = db.attr_lookup_handle(int(params.get('ATTRIBUTE HANDLE'), 16))
-    if attr is None or not isinstance(attr, GattCharacteristicDescriptor):
-        logging.error("included not found")
-        return False
-
-    p_format = int(params.get('FORMAT'), 16)
-    p_exponent = int(params.get('EXPONENT'), 16)
-    p_uint = int(params.get('UINT'), 16)
-    p_namespace = int(params.get('NAMESPACE'), 16)
-    p_description = int(params.get('DESCRIPTION'), 16)
-
-    i_format, i_exponent, i_uint, i_namespace, i_description = struct.unpack("<BBHBH", attr.value)
-
-    if p_format != i_format \
-            or p_exponent != i_exponent \
-            or p_uint != i_uint \
-            or p_namespace != i_namespace \
-            or p_description != i_description:
-        return False
+    btp.gattc_notification_ev(btp.pts_addr_get(),
+                              btp.pts_addr_type_get(), 2)
 
     return True
 
@@ -1024,42 +854,16 @@ def hdl_wid_108(desc):
     MMI.reset()
     MMI.parse_description(desc)
 
-    uuid = MMI.args[0]
+    btp.gattc_read_uuid(btp.pts_addr_type_get(), btp.pts_addr_get(),
+                        0x0001, 0xffff, MMI.args[0])
 
-    if not uuid:
-        logging.debug("parsing error")
-        return False
-
-    btp.gattc_read_uuid(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
-                        "0001", "FFFF", uuid)
-
-    try:
-        btp.gattc_read_uuid_rsp(False, True)
-    except socket.timeout:
-        return False
+    btp.gattc_read_uuid_rsp(True, True)
 
     return True
 
 
 def hdl_wid_109(desc):
-    MMI.reset()
-    MMI.parse_description(desc)
-
-    uuid = MMI.args[0]
-
-    if not uuid:
-        logging.debug("parsing error")
-        return False
-
-    btp.gattc_read_uuid(btp.pts_addr_type_get(None), btp.pts_addr_get(None),
-                        "0001", "FFFF", uuid)
-
-    try:
-        btp.gattc_read_uuid_rsp(False, True)
-    except socket.timeout:
-        return False
-
-    return True
+    return hdl_wid_108(desc)
 
 
 def hdl_wid_110(desc):
@@ -1068,7 +872,8 @@ def hdl_wid_110(desc):
     for chrc in chrcs:
         handle, perm, type_uuid = chrc
 
-        chrc_val = btp.gatts_get_attr_val(handle)
+        chrc_val = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                          btp.pts_addr_get(), handle)
         if not chrc_val:
             continue
 
@@ -1085,7 +890,7 @@ def hdl_wid_110(desc):
             continue
 
         handle, perm, type_uuid = chrc_value_attr[0]
-        if not (perm & Perm.read) or not (prop & Prop.read):
+        if not (perm & Perm.read):
             return '{0:04x}'.format(handle, 'x')
 
     return '0000'
@@ -1097,7 +902,8 @@ def hdl_wid_111(desc):
     for chrc in chrcs:
         handle, perm, type_uuid = chrc
 
-        chrc_val = btp.gatts_get_attr_val(handle)
+        chrc_val = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                          btp.pts_addr_get(), handle)
         if not chrc_val:
             continue
 
@@ -1126,7 +932,8 @@ def hdl_wid_112(desc):
     for chrc in chrcs:
         handle, perm, type_uuid = chrc
 
-        chrc_val = btp.gatts_get_attr_val(handle)
+        chrc_val = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                          btp.pts_addr_get(), handle)
         if not chrc_val:
             continue
 
@@ -1143,7 +950,8 @@ def hdl_wid_112(desc):
             continue
 
         handle, perm, type_uuid = chrc_value_attr[0]
-        chrc_value_data = btp.gatts_get_attr_val(handle)
+        chrc_value_data = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                                 btp.pts_addr_get(), handle)
         if not chrc_value_data:
             continue
 
@@ -1163,7 +971,8 @@ def hdl_wid_113(desc):
     for chrc in chrcs:
         handle, perm, type_uuid = chrc
 
-        chrc_data = btp.gatts_get_attr_val(handle)
+        chrc_data = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                           btp.pts_addr_get(), handle)
         if not chrc_data:
             continue
 
@@ -1180,7 +989,8 @@ def hdl_wid_113(desc):
             continue
 
         handle, perm, type_uuid = chrc_value_attr[0]
-        chrc_value_data = btp.gatts_get_attr_val(handle)
+        chrc_value_data = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                                 btp.pts_addr_get(), handle)
         if not chrc_value_data:
             continue
 
@@ -1201,7 +1011,8 @@ def hdl_wid_114(desc):
     for chrc in chrcs:
         handle, perm, type_uuid = chrc
 
-        chrc_val = btp.gatts_get_attr_val(handle)
+        chrc_val = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                          btp.pts_addr_get(), handle)
         if not chrc_val:
             continue
 
@@ -1230,7 +1041,8 @@ def hdl_wid_115(desc):
     for chrc in chrcs:
         handle, perm, type_uuid = chrc
 
-        chrc_val = btp.gatts_get_attr_val(handle)
+        chrc_val = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                          btp.pts_addr_get(), handle)
         if not chrc_val:
             continue
 
@@ -1254,18 +1066,7 @@ def hdl_wid_115(desc):
 
 
 def hdl_wid_118(desc):
-    # Lookup invalid attribute handle
-    handle = None
-
-    attrs = btp.gatts_get_attrs()
-    for attr in attrs:
-        handle, perm, type_uuid = attr
-
-    if handle is None:
-        logging.error("No attribute found!")
-        return "0000"
-
-    return '{0:04x}'.format(handle + 1, 'x')
+    return '{0:04x}'.format(65000, 'x')
 
 
 def hdl_wid_119(desc):
@@ -1276,7 +1077,8 @@ def hdl_wid_119(desc):
     for chrc in chrcs:
         handle, perm, type_uuid = chrc
 
-        chrc_val = btp.gatts_get_attr_val(handle)
+        chrc_val = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                          btp.pts_addr_get(), handle)
         if not chrc_val:
             continue
 
@@ -1311,7 +1113,8 @@ def hdl_wid_120(desc):
     for chrc in chrcs:
         handle, perm, type_uuid = chrc
 
-        chrc_val = btp.gatts_get_attr_val(handle)
+        chrc_val = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                          btp.pts_addr_get(), handle)
         if not chrc_val:
             continue
 
@@ -1336,11 +1139,14 @@ def hdl_wid_120(desc):
 
 def hdl_wid_121(desc):
     # Lookup characteristic UUID that returns Insufficient Encryption Key Size
+    # TODO This needs reworking
     chrcs = btp.gatts_get_attrs(type_uuid='2803')
+
     for chrc in chrcs:
         handle, perm, type_uuid = chrc
 
-        chrc_val = btp.gatts_get_attr_val(handle)
+        chrc_val = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                          btp.pts_addr_get(), handle)
         if not chrc_val:
             continue
 
@@ -1357,27 +1163,26 @@ def hdl_wid_121(desc):
             continue
 
         handle, perm, type_uuid = chrc_value_attr[0]
-        chrc_value_data = btp.gatts_get_attr_val(handle)
+        chrc_value_data = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                                 btp.pts_addr_get(), handle)
         if not chrc_value_data:
             continue
 
-        # Check if returned ATT Insufficient Authorization error
-        att_rsp, val_len, val = chrc_value_data
-        if att_rsp != 0x0c:
-            continue
-
-        return '{0:04x}'.format(handle, 'x')
+        if perm & Perm.write_enc and perm & Perm.read_enc:
+            return '{0:04x}'.format(handle, 'x')
 
     return '0000'
 
 
 def hdl_wid_122(desc):
     # Lookup characteristic UUID that returns Insufficient Encryption Key Size
+    # TODO This needs reworking
     chrcs = btp.gatts_get_attrs(type_uuid='2803')
     for chrc in chrcs:
         handle, perm, type_uuid = chrc
 
-        chrc_data = btp.gatts_get_attr_val(handle)
+        chrc_data = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                           btp.pts_addr_get(), handle)
         if not chrc_data:
             continue
 
@@ -1394,17 +1199,15 @@ def hdl_wid_122(desc):
             continue
 
         handle, perm, type_uuid = chrc_value_attr[0]
-        chrc_value_data = btp.gatts_get_attr_val(handle)
+        chrc_value_data = btp.gatts_get_attr_val(btp.pts_addr_type_get(),
+                                                 btp.pts_addr_get(), handle)
         if not chrc_value_data:
             continue
 
         att_rsp, val_len, val = chrc_value_data
 
-        # Check if returned ATT Insufficient Authorization error
-        if att_rsp != 0x0c:
-            continue
-
-        return btp.btp2uuid(uuid_len, chrc_uuid)
+        if perm & Perm.read and perm & Perm.read_enc:
+            return btp.btp2uuid(uuid_len, chrc_uuid)
 
     return '0000'
 
