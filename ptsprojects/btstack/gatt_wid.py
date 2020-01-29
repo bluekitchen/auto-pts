@@ -25,7 +25,7 @@ from time import sleep
 from ptsprojects.stack import get_stack
 from ptsprojects.testcase import MMI
 from pybtp import btp
-from pybtp.types import Prop, Perm, IOCap
+from pybtp.types import UUID, Prop, Perm, IOCap
 
 log = logging.debug
 
@@ -1211,6 +1211,23 @@ def hdl_wid_122(desc):
 
     return '0000'
 
+def hdl_wid_123(desc):
+    # Enter the First Handle(0x)(Range 0x0001-0xFFFF) for Read Multiple that will satisfy the test case.
+
+    # Lookup attribute value handle for VND16_4
+    chrcs = btp.gatts_get_attrs(type_uuid = UUID.VND16_4)
+    first_characteristic = chrcs[0]
+    handle = first_characteristic[0]
+    return '{0:04x}'.format(handle, 'x')
+
+def hdl_wid_124(desc):
+    # Enter the Second Handle(0x)(Range 0x0001-0xFFFF) for Read Multiple that will satisfy the test case.
+
+    # Lookup attribute value handle for VND16_2
+    chrcs = btp.gatts_get_attrs(type_uuid = UUID.VND16_2)
+    second_characteristic = chrcs[0]
+    handle = second_characteristic[0]
+    return '{0:04x}'.format(handle, 'x')
 
 def hdl_wid_2000(desc):
     stack = get_stack()
