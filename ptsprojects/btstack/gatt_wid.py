@@ -275,8 +275,8 @@ def hdl_wid_25(desc):
     MMI.parse_description(desc)
 
     pts_chrc_uuid = MMI.args[0]
-    pts_chrc_handles = [int(MMI.args[1], 16), int(MMI.args[2], 16),
-                        int(MMI.args[3], 16), int(MMI.args[4], 16)]
+    # BTstack btpclient currently has only 'GAP Name' in GAP Service (1800)
+    pts_chrc_handles = [int(MMI.args[1], 16)]
 
     iut_start_handle = None
     iut_end_handle = None
