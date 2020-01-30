@@ -279,7 +279,7 @@ def hdl_wid_25(desc):
     pts_chrc_handles = [int(MMI.args[1], 16)]
 
     iut_start_handle = None
-    iut_end_handle = None
+    iut_end_handle = 0xffff
 
     # Find pts_chrc_uuid service and it's handle range
     svcs = btp.gatts_get_attrs(type_uuid='2800')
@@ -299,7 +299,7 @@ def hdl_wid_25(desc):
         if btp.btp2uuid(uuid_len, uuid) == pts_chrc_uuid:
             iut_start_handle = handle
 
-    if iut_start_handle is None or iut_end_handle is None:
+    if iut_start_handle is None:
         logging.error("service %s not found", pts_chrc_uuid)
         return False
 
