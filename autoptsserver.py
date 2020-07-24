@@ -91,37 +91,45 @@ class PyPTSWithXmlRpcCallback(ptscontrol.PyPTS):
         self.client_port = None
         self.client_xmlrpc_proxy = None
 
+class AutoPTSServer:
+    """Simple object that allows to stop and exit XMLRPCServer"""
 
-def main():
-    """Main."""
-    winutils.exit_if_admin()
+    def main(self): 
+        """Main."""
+        winutils.exit_if_admin()
 
-    script_name = os.path.basename(sys.argv[0])  # in case it is full path
-    script_name_no_ext = os.path.splitext(script_name)[0]
+        script_name = os.path.basename(sys.argv[0])  # in case it is full path
+        script_name_no_ext = os.path.splitext(script_name)[0]
 
-    log_filename = "%s.log" % (script_name_no_ext,)
-    format = ("%(asctime)s %(name)s %(levelname)s : %(message)s")
+        log_filename = "%s.log" % (script_name_no_ext,)
+        format = ("%(asctime)s %(name)s %(levelname)s : %(message)s")
 
-    logging.basicConfig(format=format,
-                        filename=log_filename,
-                        filemode='w',
-                        level=logging.DEBUG)
+        logging.basicConfig(format=format,
+                            filename=log_filename,
+                            filemode='w',
+                            level=logging.DEBUG)
 
-    c = wmi.WMI()
-    for iface in c.Win32_NetworkAdapterConfiguration(IPEnabled=True):
-        print("Local IP address: %s DNS %r" % (iface.IPAddress, iface.DNSDomain))
+        c = wmi.WMI()
+        for iface in c.Win32_NetworkAdapterConfiguration(IPEnabled=True):
+            print("Local IP address: %s DNS %r" % (iface.IPAddress, iface.DNSDomain))
 
-    print("Starting PTS ...")
-    pts = PyPTSWithXmlRpcCallback()
-    print("OK")
+        print("Starting PTS ...")
+        pts = PyPTSWithXmlRpcCallback()
+        print("OK")
 
-    print("Serving on port {} ...".format(SERVER_PORT))
+        print("Serving on port {} ...".format(SERVER_PORT))
 
-    server = xmlrpc.server.SimpleXMLRPCServer(("", SERVER_PORT), allow_none=True)
-    server.register_instance(pts)
-    server.register_introspection_functions()
-    server.serve_forever()
+        server = xmlrpc.server.SimpleXMLRPCServer(("", SERVER_PORT), allow_none=True)
+        server.register_instance(pts)
+        server.register_introspection_functions()
 
+        self.quit = False
+        while not self.quit:
+            self.handle_request()
+
+    def stop(self):
+        """Stop server"""
+        self.quit = True
 
 if __name__ == "__main__":
-    main()
+    AutoPTSServer().main()
