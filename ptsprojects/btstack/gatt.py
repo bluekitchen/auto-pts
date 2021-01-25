@@ -18,7 +18,7 @@
 try:
     from ptsprojects.testcase import TestCase, TestCmd, TestFunc, \
         TestFuncCleanUp, MMI
-    from ptsprojects.btstack.ztestcase import ZTestCase
+    from ptsprojects.btstack.ztestcase import ZTestCase, ZTestCaseSlave
 
 except ImportError:  # running this module as script
     import sys
@@ -106,7 +106,7 @@ def verify_gatt_sr_gpa_bv_04_c(description):
     return verification_pass
 
 
-def set_pixits(pts):
+def set_pixits(ptses):
     """Setup GATT profile PIXITS for workspace. Those values are used for test
     case if not updated within test case.
 
@@ -114,6 +114,8 @@ def set_pixits(pts):
     PTS.
 
     pts -- Instance of PyPTS"""
+
+    pts = ptses[0]
 
     pts.set_pixit("GATT", "TSPX_bd_addr_iut", "DEADBEEFDEAD")
     pts.set_pixit("GATT", "TSPX_iut_device_name_in_adv_packet_for_random_address", "")
@@ -135,9 +137,36 @@ def set_pixits(pts):
     pts.set_pixit("GATT", "TSPX_delete_ltk", "TRUE")
     pts.set_pixit("GATT", "TSPX_tester_appearance", "0000")
 
+    if len(ptses) < 2:
+        return
 
-def test_cases_server(pts):
+    pts2 = ptses[1]
+
+    pts2.set_pixit("GATT", "TSPX_bd_addr_iut", "DEADBEEFDEAD")
+    pts2.set_pixit("GATT", "TSPX_iut_device_name_in_adv_packet_for_random_address", "")
+    pts2.set_pixit("GATT", "TSPX_security_enabled", "FALSE")
+    pts2.set_pixit("GATT", "TSPX_delete_link_key", "TRUE")
+    pts2.set_pixit("GATT", "TSPX_time_guard", "180000")
+    pts2.set_pixit("GATT", "TSPX_selected_handle", "0012")
+    pts2.set_pixit("GATT", "TSPX_use_implicit_send", "TRUE")
+    pts2.set_pixit("GATT", "TSPX_secure_simple_pairing_pass_key_confirmation", "FALSE")
+    pts2.set_pixit("GATT", "TSPX_iut_use_dynamic_bd_addr", "FALSE")
+    pts2.set_pixit("GATT", "TSPX_iut_setup_att_over_br_edr", "FALSE")
+    pts2.set_pixit("GATT", "TSPX_tester_database_file",
+                  "C:\Program Files\Bluetooth SIG\Bluetooth PTS\Data\SIGDatabase\GATT_Qualification_Test_Databases.xml")
+    pts2.set_pixit("GATT", "TSPX_iut_is_client_periphral", "FALSE")
+    pts2.set_pixit("GATT", "TSPX_iut_is_server_central", "FALSE")
+    pts2.set_pixit("GATT", "TSPX_mtu_size", "23")
+    pts2.set_pixit("GATT", "TSPX_pin_code", "0000")
+    pts2.set_pixit("GATT", "TSPX_use_dynamic_pin", "FALSE")
+    pts2.set_pixit("GATT", "TSPX_delete_ltk", "TRUE")
+    pts2.set_pixit("GATT", "TSPX_tester_appearance", "0000")
+
+
+def test_cases_server(ptses):
     """Returns a list of GATT Server test cases"""
+
+    pts = ptses[0]
 
     pts_bd_addr = pts.q_bd_addr
     stack = get_stack()
@@ -527,7 +556,30 @@ def test_cases_server(pts):
                   generic_wid_hdl=gatt_wid_hdl),
     ]
 
-    return test_cases
+    if len(ptses) < 2:
+        return test_cases
+
+    pts2 = ptses[1]
+    pre_conditions_lt2 = [TestFunc(lambda: pts2.update_pixit_param(
+        "GATT", "TSPX_bd_addr_iut",
+        stack.gap.iut_addr_get_str())),
+                          TestFunc(lambda: pts2.update_pixit_param(
+                              "GATT", "TSPX_iut_use_dynamic_bd_addr",
+                              "TRUE" if stack.gap.iut_addr_is_random()
+                              else "FALSE"))]
+
+    test_cases_lt2 = [
+        ZTestCase("GATT", "GATT/SR/GAS/BV-03-C",
+                  cmds=pre_conditions_1 +
+                       [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
+                  generic_wid_hdl=gatt_wid_hdl,
+                  lt2="GATT/SR/GAS/BV-03-C-LT2"),
+        ZTestCaseSlave("GATT", "GATT/SR/GAS/BV-03-C-LT2",
+                       cmds=pre_conditions_lt2,
+                       generic_wid_hdl=gatt_wid_hdl),
+    ]
+
+    return test_cases + test_cases_lt2
 
 
 def test_cases_client(pts):
@@ -746,15 +798,15 @@ def test_cases_client(pts):
     return test_cases
 
 
-def test_cases(pts):
+def test_cases(ptses):
     """Returns a list of GATT test cases"""
 
     stack = get_stack()
 
     stack.gap_init()
 
-    test_cases = test_cases_client(pts)
-    test_cases += test_cases_server(pts)
+    test_cases = test_cases_client(ptses[0])
+    test_cases += test_cases_server(ptses)
 
     return test_cases
 
@@ -768,14 +820,14 @@ def main():
     test_cases_ = test_cases("AB:CD:EF:12:34:56")
 
     for test_case in test_cases_:
-        print
-        print test_case
+        print()
+        print(test_case)
 
         if test_case.edit1_wids:
-            print "edit1_wids: %r" % test_case.edit1_wids
+            print(("edit1_wids: %r" % test_case.edit1_wids))
 
         if test_case.verify_wids:
-            print "verify_wids: %r" % test_case.verify_wids
+            print(("verify_wids: %r" % test_case.verify_wids))
 
         for index, cmd in enumerate(test_case.cmds):
             str_cmd = str(cmd)
@@ -787,7 +839,7 @@ def main():
                 elif cmd.func == btp.gatts_add_desc:
                     str_cmd += ", Permissions: %s" % Perm.decode(cmd.args[1])
 
-            print "%d) %s" % (index, str_cmd)
+            print(("%d) %s" % (index, str_cmd)))
 
 
 if __name__ == "__main__":
