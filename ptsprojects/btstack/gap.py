@@ -32,9 +32,9 @@ from time import sleep
 from pybtp import btp
 from pybtp.types import Addr, IOCap, AdType, AdFlags, Prop, Perm
 import binascii
-import gatt
+from . import gatt
 from ptsprojects.stack import get_stack
-from gap_wid import gap_wid_hdl, hdl_wid_161
+from .gap_wid import gap_wid_hdl, hdl_wid_161
 
 
 class UUID:
@@ -69,7 +69,7 @@ init_gatt_db = [TestFunc(btp.core_reg_svc_gatt),
                 TestFunc(btp.gatts_set_val, 0, '03'),
                 TestFunc(btp.gatts_start_server)]
 
-iut_device_name = 'Tester'
+iut_device_name = 'Tester'.encode('utf-8')
 iut_manufacturer_data = 'ABCD'
 iut_appearance = '1111'
 iut_svc_data = '1111'
@@ -86,7 +86,7 @@ class AdData:
 # Advertising data
 ad = [(AdType.uuid16_some, '1111'),
       (AdType.gap_appearance, '1111'),
-      (AdType.name_short, binascii.hexlify('Tester')),
+      (AdType.name_short, binascii.hexlify('Tester'.encode('utf-8'))),
       (AdType.manufacturer_data, '11111111'),
       (AdType.uuid16_svc_data, '111111')]
 
@@ -107,10 +107,10 @@ def set_pixits(pts):
     # BTstack is tested as dual-mode, don't set AdFlags.br_edr_not_supp
     ad_str_flags = str(AdType.flags).zfill(2) + \
                    str(0).zfill(2)
-    ad_str_flags_len = str(len(ad_str_flags) / 2).zfill(2)
+    ad_str_flags_len = str(len(ad_str_flags) // 2).zfill(2)
     ad_str_name_short = str(AdType.name_short).zfill(2) + \
-                        binascii.hexlify(iut_device_name)
-    ad_str_name_short_len = str(len(ad_str_name_short) / 2).zfill(2)
+        bytes.hex(iut_device_name)
+    ad_str_name_short_len = str(len(ad_str_name_short) // 2).zfill(2)
     ad_pixit = ad_str_flags_len + ad_str_flags + ad_str_name_short_len + \
                ad_str_name_short
 
@@ -196,6 +196,8 @@ def test_cases(pts):
         TestFunc(lambda: pts.update_pixit_param(
             "GAP", "TSPX_bd_addr_iut",
             stack.gap.iut_addr_get_str())),
+        TestFunc(lambda: pts.update_pixit_param(
+            "GAP", "TSPX_delete_link_key", "TRUE")),
         TestFunc(lambda: pts.update_pixit_param(
             "GAP", "TSPX_iut_privacy_enabled",
             "TRUE" if stack.gap.iut_has_privacy() else "FALSE")),
@@ -624,17 +626,17 @@ def main():
     test_cases_ = test_cases("AB:CD:EF:12:34:56")
 
     for test_case in test_cases_:
-        print
-        print test_case
+        print ()
+        print (test_case)
 
         if test_case.edit1_wids:
-            print "edit1_wids: %r" % test_case.edit1_wids
+            print("edit1_wids: %r" % test_case.edit1_wids)
 
         if test_case.verify_wids:
-            print "verify_wids: %r" % test_case.verify_wids
+            print("verify_wids: %r" % test_case.verify_wids)
 
         for index, cmd in enumerate(test_case.cmds):
-            print "%d) %s" % (index, cmd)
+            print("(%d) %s" % (index, cmd))
 
 
 if __name__ == "__main__":

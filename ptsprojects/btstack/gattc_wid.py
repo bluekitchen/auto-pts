@@ -20,7 +20,7 @@ import sys
 from ptsprojects.testcase import MMI
 from pybtp import btp
 
-from gatt_wid import gatt_wid_hdl
+from .gatt_wid import gatt_wid_hdl
 
 
 log = logging.debug
