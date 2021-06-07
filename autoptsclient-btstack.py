@@ -37,6 +37,14 @@ def parse_args():
     arg_parser.add_argument("btpclient_path",
                             help="Path to BTstack tool btpclient (see btstack/test/auto-pts)")
 
+    arg_parser.add_argument("--recovery", action='store_true', default=False,
+                            help="Specify if autoptsserver should try to recover"
+                            " itself after exception.")
+
+    arg_parser.add_argument("--superguard", default=0, metavar='MINUTES', type=float,
+                            help="Specify amount of time in minutes, after which"
+                            " super guard will blindly trigger recovery steps.")
+
     # IUT specific arguments below
 
     args = arg_parser.parse_args()
@@ -50,6 +58,9 @@ def main():
         sys.exit("Please do not run this program as root.")
 
     args = parse_args()
+
+    # timeout specified in minuteds, but used as seconds
+    args.superguard = 60 * args.superguard
 
     ptses = autoptsclient.init_pts(args)
 
