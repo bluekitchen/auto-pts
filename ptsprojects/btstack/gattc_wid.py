@@ -38,6 +38,12 @@ def gattc_wid_hdl(wid, description, test_case_name):
         return gatt_wid_hdl(wid, description, test_case_name)
 
 
+def hdl_wid_10(desc):
+    btp.gattc_disc_all_prim(btp.pts_addr_type_get(None),
+                            btp.pts_addr_get(None))
+    btp.gattc_disc_all_prim_rsp()
+    return True
+
 def hdl_wid_17(desc):
     return btp.verify_description(desc)
 
