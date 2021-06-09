@@ -435,44 +435,44 @@ def test_cases(pts):
         #           cmds=pre_conditions + init_gatt_db +
         #           [TestFunc(btp.gap_set_bondable_on), TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
         #           generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/BOND/BON/BV-04-C",
-                  cmds=pre_conditions + init_gatt_db +
-                       [TestFunc(btp.gap_set_bondable_on), TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
-                  generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/SEC/AUT/BV-11-C",
-                  cmds=pre_conditions + init_gatt_db +
-                       [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
-                  generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/SEC/AUT/BV-12-C",
-                  cmds=pre_conditions + init_gatt_db +
-                       [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
-                  generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/SEC/AUT/BV-13-C",
-                  cmds=pre_conditions + init_gatt_db +
-                       [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
-                  generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/SEC/AUT/BV-14-C",
-                  cmds=pre_conditions + init_gatt_db +
-                       [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
-                  generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/SEC/AUT/BV-17-C",
-                  cmds=pre_conditions +
-                  [TestFunc(btp.core_reg_svc_gatt),
-                   TestFunc(btp.gap_set_io_cap, IOCap.display_only),
-                   TestFunc(btp.gap_conn, start_wid=78),
-                   TestFunc(btp.gattc_read, Addr.le_public,
-                            pts_bd_addr, "0001", start_wid=112),
-                   # Bonding shall start automatically, so ignore wid: 108
-                   # "Please start the Bonding Procedure..."
-
-                   # Await read response after bonding
-                   TestFunc(btp.gattc_read_rsp, store_val=False,
-                            post_wid=108),
-                   TestFunc(btp.gap_disconn, start_wid=44)]),
-        ZTestCase("GAP", "GAP/SEC/AUT/BV-18-C",
-                  cmds=pre_conditions + init_gatt_db +
-                       [TestFunc(btp.gap_set_io_cap, IOCap.no_input_output)],
-                  generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/BOND/BON/BV-04-C",
+        #           cmds=pre_conditions + init_gatt_db +
+        #                [TestFunc(btp.gap_set_bondable_on), TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
+        #           generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/SEC/AUT/BV-11-C",
+        #           cmds=pre_conditions + init_gatt_db +
+        #                [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
+        #           generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/SEC/AUT/BV-12-C",
+        #           cmds=pre_conditions + init_gatt_db +
+        #                [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
+        #           generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/SEC/AUT/BV-13-C",
+        #           cmds=pre_conditions + init_gatt_db +
+        #                [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
+        #           generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/SEC/AUT/BV-14-C",
+        #           cmds=pre_conditions + init_gatt_db +
+        #                [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
+        #           generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/SEC/AUT/BV-17-C",
+        #           cmds=pre_conditions +
+        #           [TestFunc(btp.core_reg_svc_gatt),
+        #            TestFunc(btp.gap_set_io_cap, IOCap.display_only),
+        #            TestFunc(btp.gap_conn, start_wid=78),
+        #            TestFunc(btp.gattc_read, Addr.le_public,
+        #                     pts_bd_addr, "0001", start_wid=112),
+        #            # Bonding shall start automatically, so ignore wid: 108
+        #            # "Please start the Bonding Procedure..."
+        #
+        #            # Await read response after bonding
+        #            TestFunc(btp.gattc_read_rsp, store_val=False,
+        #                     post_wid=108),
+        #            TestFunc(btp.gap_disconn, start_wid=44)]),
+        # ZTestCase("GAP", "GAP/SEC/AUT/BV-18-C",
+        #           cmds=pre_conditions + init_gatt_db +
+        #                [TestFunc(btp.gap_set_io_cap, IOCap.no_input_output)],
+        #           generic_wid_hdl=gap_wid_hdl),
         # Crashes PTS currently -- mabye passkey "none" is sent
         # ZTestCase("GAP", "GAP/SEC/AUT/BV-19-C",
         #           cmds=pre_conditions +
@@ -484,69 +484,69 @@ def test_cases(pts):
         #            TestFunc(btp.gattc_read_rsp, store_val=False,
         #                     post_wid=112),
         #            TestFunc(btp.gap_disconn, start_wid=44)]),
-        ZTestCase("GAP", "GAP/SEC/AUT/BV-20-C",
-                  cmds=pre_conditions + init_gatt_db +
-                       [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
-                  generic_wid_hdl=gap_wid_hdl),
-        # Causes issues in later tests
-        # ZTestCase("GAP", "GAP/SEC/AUT/BV-21-C",
+        # ZTestCase("GAP", "GAP/SEC/AUT/BV-20-C",
+        #           cmds=pre_conditions + init_gatt_db +
+        #                [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
+        #           generic_wid_hdl=gap_wid_hdl),
+        # # Causes issues in later tests
+        # # ZTestCase("GAP", "GAP/SEC/AUT/BV-21-C",
+        # #           cmds=pre_conditions,
+        # #           generic_wid_hdl=gap_wid_hdl),
+        # # TODO: Inform about lost bond
+        # ZTestCase("GAP", "GAP/SEC/AUT/BV-22-C",
         #           cmds=pre_conditions,
         #           generic_wid_hdl=gap_wid_hdl),
-        # TODO: Inform about lost bond
-        ZTestCase("GAP", "GAP/SEC/AUT/BV-22-C",
-                  cmds=pre_conditions,
-                  generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/SEC/AUT/BV-23-C",
-                  cmds=pre_conditions + init_gatt_db +
-                       [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
-                  generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/SEC/AUT/BV-24-C",
-                  cmds=pre_conditions + init_gatt_db +
-                       [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
-                  generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/SEC/CSIGN/BV-01-C",
-                  cmds=pre_conditions + init_gatt_db +
-                       [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
-                  generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/SEC/CSIGN/BV-02-C",
-                  cmds=pre_conditions + init_gatt_db +
-                  [TestFunc(btp.gap_set_io_cap, IOCap.no_input_output)],
-                  generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/SEC/CSIGN/BI-01-C",
-                  cmds=pre_conditions + init_gatt_db +
-                  [TestFunc(btp.gap_set_io_cap, IOCap.no_input_output)],
-                  generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/SEC/CSIGN/BI-02-C",
-                  edit1_wids={161: hdl_wid_161},
-                  verify_wids={130: lambda x: (
-                      btp.gatts_verify_write_success(x) and
-                      btp.gatts_verify_write_success(x) and
-                      btp.gatts_verify_write_fail(x))},
-                  cmds=pre_conditions + init_gatt_db +
-                  [TestFunc(btp.gap_set_io_cap, IOCap.no_input_output),
-                   TestFunc(btp.gap_set_conn),
-                   TestFunc(lambda: btp.gap_adv_ind_on(sd=get_stack().gap.sd)),
-                   TestFunc(btp.gap_disconn, pts_bd_addr, Addr.le_public,
-                            start_wid=77)]),
-        ZTestCase("GAP", "GAP/SEC/CSIGN/BI-03-C",
-                  cmds=pre_conditions + init_gatt_db +
-                  [TestFunc(btp.gap_set_io_cap, IOCap.no_input_output)],
-                  generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/SEC/CSIGN/BI-04-C",
-                  cmds=pre_conditions +
-                  [TestFunc(btp.gap_set_io_cap, IOCap.no_input_output)],
-                  generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/PRIV/CONN/BV-10-C",
-                  cmds=pre_conditions +
-                       [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
-                  generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/PRIV/CONN/BV-11-C",
-                  cmds=pre_conditions,
-                  generic_wid_hdl=gap_wid_hdl),
-        ZTestCase("GAP", "GAP/PRIV/CONN/BI-01-C",
-                  cmds=pre_conditions +
-                  [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
-                  generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/SEC/AUT/BV-23-C",
+        #           cmds=pre_conditions + init_gatt_db +
+        #                [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
+        #           generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/SEC/AUT/BV-24-C",
+        #           cmds=pre_conditions + init_gatt_db +
+        #                [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
+        #           generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/SEC/CSIGN/BV-01-C",
+        #           cmds=pre_conditions + init_gatt_db +
+        #                [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
+        #           generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/SEC/CSIGN/BV-02-C",
+        #           cmds=pre_conditions + init_gatt_db +
+        #           [TestFunc(btp.gap_set_io_cap, IOCap.no_input_output)],
+        #           generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/SEC/CSIGN/BI-01-C",
+        #           cmds=pre_conditions + init_gatt_db +
+        #           [TestFunc(btp.gap_set_io_cap, IOCap.no_input_output)],
+        #           generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/SEC/CSIGN/BI-02-C",
+        #           edit1_wids={161: hdl_wid_161},
+        #           verify_wids={130: lambda x: (
+        #               btp.gatts_verify_write_success(x) and
+        #               btp.gatts_verify_write_success(x) and
+        #               btp.gatts_verify_write_fail(x))},
+        #           cmds=pre_conditions + init_gatt_db +
+        #           [TestFunc(btp.gap_set_io_cap, IOCap.no_input_output),
+        #            TestFunc(btp.gap_set_conn),
+        #            TestFunc(lambda: btp.gap_adv_ind_on(sd=get_stack().gap.sd)),
+        #            TestFunc(btp.gap_disconn, pts_bd_addr, Addr.le_public,
+        #                     start_wid=77)]),
+        # ZTestCase("GAP", "GAP/SEC/CSIGN/BI-03-C",
+        #           cmds=pre_conditions + init_gatt_db +
+        #           [TestFunc(btp.gap_set_io_cap, IOCap.no_input_output)],
+        #           generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/SEC/CSIGN/BI-04-C",
+        #           cmds=pre_conditions +
+        #           [TestFunc(btp.gap_set_io_cap, IOCap.no_input_output)],
+        #           generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/PRIV/CONN/BV-10-C",
+        #           cmds=pre_conditions +
+        #                [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
+        #           generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/PRIV/CONN/BV-11-C",
+        #           cmds=pre_conditions,
+        #           generic_wid_hdl=gap_wid_hdl),
+        # ZTestCase("GAP", "GAP/PRIV/CONN/BI-01-C",
+        #           cmds=pre_conditions +
+        #           [TestFunc(btp.gap_set_io_cap, IOCap.display_only)],
+        #           generic_wid_hdl=gap_wid_hdl),
         ZTestCase("GAP", "GAP/ADV/BV-01-C",
                   cmds=pre_conditions,
                   generic_wid_hdl=gap_wid_hdl),
