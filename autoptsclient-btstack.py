@@ -83,7 +83,7 @@ def main():
 
     test_cases = []
     test_cases += autoprojects.gap.test_cases(ptses[0])
-    # test_cases += autoprojects.gatt.test_cases(ptses)
+    test_cases += autoprojects.gatt.test_cases(ptses)
     # test_cases += autoprojects.sm.test_cases(ptses[0])
     # test_cases += autoprojects.l2cap.test_cases(ptses[0])
     # test_cases += autoprojects.mesh.test_cases(ptses)
