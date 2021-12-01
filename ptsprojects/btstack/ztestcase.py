@@ -16,7 +16,8 @@
 """Test case that manages BTstack IUT"""
 
 from ptsprojects.testcase import TestCaseLT1, TestCaseLT2, TestFunc, TestFuncCleanUp
-
+from ptsprojects.stack import get_stack
+from ptsprojects.btstack.iutctl import get_iut
 from pybtp import btp
 
 
@@ -26,14 +27,25 @@ class ZTestCase(TestCaseLT1):
     def __init__(self, *args, **kwargs):
         """Refer to TestCase.__init__ for parameters and their documentation"""
 
-        super(ZTestCase, self).__init__(*args, ptsproject_name="btstack",
-                                        **kwargs)
+        super(ZTestCase, self).__init__(*args, ptsproject_name="btstack", **kwargs)
+
+        self.stack = get_stack()
+        self.iutctrl = get_iut()
 
         # Log test name
         self.cmds.insert(0, TestFunc(btp.core_log_message, self.name))
 
+        # start btpclient
+        self.cmds.insert(0, TestFunc(self.iutctrl.start))
+        self.cmds.insert(1, TestFunc(self.iutctrl.wait_iut_ready_event))
+
+        self.cmds.append(TestFuncCleanUp(self.stack.cleanup))
+
         # power down
-        self.cmds.append(TestFuncCleanUp(btp.gap_set_powered_off))
+        # self.cmds.append(TestFuncCleanUp(btp.gap_set_powered_off))
+
+        # last command is to stop btpclient
+        self.cmds.append(TestFuncCleanUp(self.iutctrl.stop))
 
 
 class ZTestCaseSlave(TestCaseLT2):
@@ -42,5 +54,4 @@ class ZTestCaseSlave(TestCaseLT2):
     def __init__(self, *args, **kwargs):
         """Refer to TestCase.__init__ for parameters and their documentation"""
 
-        super(ZTestCaseSlave, self).__init__(*args, ptsproject_name="btstack",
-                                             **kwargs)
+        super(ZTestCaseSlave, self).__init__(*args, ptsproject_name="btstack", **kwargs)

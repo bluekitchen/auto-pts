@@ -66,7 +66,7 @@ def hdl_wid_11(desc):
 
 
 def hdl_wid_12(desc):
-    btp.gap_start_discov(type='passive', mode='observe')
+    btp.gap_start_discov(discov_type='passive', mode='observe')
     return True
 
 
@@ -523,7 +523,7 @@ def hdl_wid_137(desc):
 
 
 def hdl_wid_138(desc):
-    btp.gap_start_discov(transport='le', type='active', mode='observe')
+    btp.gap_start_discov(transport='le', discov_type='active', mode='observe')
     sleep(10)  # Give some time to discover devices
     btp.gap_stop_discov()
     return btp.check_discov_results()
@@ -683,7 +683,7 @@ def hdl_wid_156(desc):
 
 
 def hdl_wid_157(desc):
-    btp.gap_start_discov(transport='le', type='active', mode='observe')
+    btp.gap_start_discov(transport='le', discov_type='active', mode='observe')
     sleep(10)  # Give some time to discover devices
     btp.gap_stop_discov()
     return btp.check_discov_results()
@@ -738,7 +738,7 @@ def hdl_wid_162(desc):
 
 
 def hdl_wid_169(desc):
-    btp.gap_start_discov(type='active', mode='observe')
+    btp.gap_start_discov(discov_type='active', mode='observe')
     return True
 
 
@@ -776,7 +776,7 @@ def hdl_wid_179(desc):
 
 
 def hdl_wid_204(desc):
-    btp.gap_start_discov(type='passive', mode='observe')
+    btp.gap_start_discov(discov_type='passive', mode='observe')
     sleep(10)
     btp.gap_stop_discov()
     return btp.check_discov_results(addr_type=0x02)

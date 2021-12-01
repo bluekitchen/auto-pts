@@ -43,24 +43,19 @@ def get_iut_cmd(btpclient_path):
 class IUTCtl:
     '''IUT Control Class'''
 
-    def __init__(self, btpclient_path):
+    def __init__(self, args):
         """Constructor."""
         log("%s.%s btpclient_path=%s", self.__class__, self.__init__.__name__,
-            btpclient_path)
+            args.btpclient_path)
 
-        self.btpclient_path = btpclient_path
-
+        self.btpclient_path = args.btpclient_path
         self.btp_socket = None
         self.iut_process = None
-
-        if not AUTO_PTS_LOCAL:
-            self.start()
 
     def start(self):
         """Starts the IUT"""
 
         log("%s.%s", self.__class__, self.start.__name__)
-
         self.btp_socket = BTPWorker()
         self.btp_socket.open()
 
@@ -79,18 +74,23 @@ class IUTCtl:
             log("IUT didn't connect!")
             self.stop()
 
-        self.wait_iut_ready_event()
 
     def wait_iut_ready_event(self):
         """Wait until IUT sends ready event after power up"""
         tuple_hdr, tuple_data = self.btp_socket.read()
 
-        if (tuple_hdr.svc_id != defs.BTP_SERVICE_ID_CORE or
+        try:
+            if (tuple_hdr.svc_id != defs.BTP_SERVICE_ID_CORE or
                 tuple_hdr.op != defs.CORE_EV_IUT_READY):
+                raise BTPError("Failed to get ready event")
+        except BTPError as err:
             log("Unexpected event received (%s), expected IUT ready!", err)
             self.stop()
         else:
             log("IUT ready event received OK")
+
+    def reset(self):
+        """Reset IUT like removing all paired devices"""
 
     def stop(self):
         """Powers off the IUT"""
@@ -110,21 +110,22 @@ def get_iut():
     return IUT
 
 
-def init(btpclient_path):
+def init(args):
     """IUT init routine"""
     global IUT_LOG_FO
     global IUT
 
     IUT_LOG_FO = open("iut-btstack.log", "w")
 
-    IUT = IUTCtl(btpclient_path)
+    IUT = IUTCtl(args)
 
 
 def cleanup():
     """IUT cleanup routine"""
     global IUT_LOG_FO, IUT
-    IUT_LOG_FO.close()
-    IUT_LOG_FO = None
+    if IUT_LOG_FO:
+        IUT_LOG_FO.close()
+        IUT_LOG_FO = None
 
     if IUT:
         IUT.stop()

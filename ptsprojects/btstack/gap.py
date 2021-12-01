@@ -95,24 +95,25 @@ def __get_attr_u16_hdl_str(offset):
     return '{0:04x}'.format(iut_attr_db_off + offset, 'x')
 
 
-def set_pixits(pts):
+def set_pixits(ptses):
     """Setup GAP profile PIXITS for workspace. Those values are used for test
     case if not updated within test case.
 
     PIXITS always should be updated accordingly to project and newest version of
     PTS.
 
-    pts -- Instance of PyPTS"""
+    ptses -- list of PyPTS instances"""
+
+    pts = ptses[0]
 
     # BTstack is tested as dual-mode, don't set AdFlags.br_edr_not_supp
     ad_str_flags = str(AdType.flags).zfill(2) + \
                    str(0).zfill(2)
     ad_str_flags_len = str(len(ad_str_flags) // 2).zfill(2)
-    ad_str_name_short = str(AdType.name_short).zfill(2) + \
-        bytes.hex(iut_device_name)
-    ad_str_name_short_len = str(len(ad_str_name_short) // 2).zfill(2)
-    ad_pixit = ad_str_flags_len + ad_str_flags + ad_str_name_short_len + \
-               ad_str_name_short
+    ad_str_name = str(AdType.name_full).zfill(2) + \
+                        bytes.hex(iut_device_name)
+    ad_str_name_len = format((len(ad_str_name) // 2), 'x').zfill(2)
+    ad_pixit = ad_str_flags_len + ad_str_flags + ad_str_name_len + ad_str_name
 
     # Set GAP common PIXIT values
     pts.set_pixit("GAP", "TSPX_bd_addr_iut", "DEADBEEFDEAD")
@@ -178,9 +179,11 @@ def set_pixits(pts):
     pts.set_pixit("GAP", "TSPX_URI", "162F2F7777772E626C7565746F6F74682E636F6D")
 
 
-def test_cases(pts):
+def test_cases(ptses):
     """Returns a list of GAP test cases
-    pts -- Instance of PyPTS"""
+    ptses -- list of PyPTS instances"""
+
+    pts = ptses[0]
 
     pts_bd_addr = pts.q_bd_addr
 

@@ -582,12 +582,10 @@ def test_cases_server(ptses):
     return test_cases + test_cases_lt2
 
 
-def test_cases_client(pts):
-    """Returns a list of GATT Client test cases
+def test_cases_client(ptses):
+    """Returns a list of GATT Client test cases """
 
-    pts -- Instance of PyPTS
-
-    """
+    pts = ptses[0]
 
     pts_bd_addr = pts.q_bd_addr
     stack = get_stack()
@@ -805,7 +803,7 @@ def test_cases(ptses):
 
     stack.gap_init()
 
-    test_cases = test_cases_client(ptses[0])
+    test_cases =  test_cases_client(ptses)
     test_cases += test_cases_server(ptses)
 
     return test_cases
