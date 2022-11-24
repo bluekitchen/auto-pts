@@ -1015,6 +1015,30 @@ def is_procedure_done(list, cnt):
     return len(list) == cnt
 
 
+class LeAudio:
+    def __init__(self):
+        self.ascs_active = False
+        self.octets_per_frame = 0
+
+    def ascs_is_connected(self):
+        return self.ascs_active
+
+    def ascs_connected(self):
+        self.ascs_active = True
+
+    def ascs_disconnected(self):
+        self.ascs_active = False
+
+    # PTS Dialog for BAP/UCL/SCC/.. does not indicate which variant to use for 48 kHz, until this is
+    # fixed we hard-code octets_per_frame
+
+    def set_octets_per_frame(self, octets):
+        logging.debug("LE Audio: set octets per frame: %s", octets)
+        self.octets_per_frame = octets
+
+    def get_octets_per_frame(self):
+        return self.octets_per_frame
+
 class GattCl:
     def __init__(self):
         # if MTU exchanged tuple (addr, addr_type, status)
@@ -1098,18 +1122,20 @@ class Stack:
         self.synch = None
         self.gatt = None
         self.gatt_cl = None
+        self.le_audio = None
         self.supported_svcs = 0
 
     def is_svc_supported(self, svc):
         # these are in little endian
         services = {
-            "CORE":         0b0000001,
-            "GAP":          0b0000010,
-            "GATT":         0b0000100,
-            "L2CAP":        0b0001000,
-            "MESH":         0b0010000,
-            "MESH_MMDL":    0b0100000,
-            "GATT_CL":      0b1000000,
+            "CORE":         0b00000001,
+            "GAP":          0b00000010,
+            "GATT":         0b00000100,
+            "L2CAP":        0b00001000,
+            "MESH":         0b00010000,
+            "MESH_MMDL":    0b00100000,
+            "GATT_CL":      0b01000000,
+            "LE_AUDIO":     0b01000000
         }
         return self.supported_svcs & services[svc] > 0
 
@@ -1134,6 +1160,13 @@ class Stack:
     def gatt_cl_init(self):
         self.gatt_cl = GattCl()
 
+    def le_audio_init(self):
+        self.le_audio = LeAudio()
+
+    # helper to call from test case
+    def le_audio_set_octets_per_frame(self, octets):
+        self.le_audio.set_octets_per_frame(octets)
+
     def synch_init(self, sync_callbacks):
         if not self.synch:
             self.synch = Synch(sync_callbacks)
@@ -1152,6 +1185,9 @@ class Stack:
 
         if self.gatt_cl:
             self.gatt_cl_init()
+
+        if self.le_audio:
+            self.le_audio_init()
 
         if self.synch:
             self.synch.cancel_synch()
