@@ -157,9 +157,8 @@ def hdl_wid_304(desc):
     btp.ascs_enable(0)
     return True
 
-
-def hdl_wid_306(desc):
-    # Please configure ASE state to Streaming for SINK ASE, Freq: 16KHz and Frame Duration: 10ms
+def hdl_wid_305(desc):
+    # Please configure ASE state to Enabling for SOURCE ASE, Freq: 16KHz and Frame Duration: 10ms
     (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info('16_2')
     btp.ascs_configure_codec(0, 6, frequency_hz, frame_duration_us, octets_per_frame)
 
@@ -167,6 +166,32 @@ def hdl_wid_306(desc):
     btp.ascs_configure_qos(0, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
 
     btp.ascs_enable(0)
+
+    # PTS 8.3 does not continue, let's assume we have to first enter streaming and then disable the stream
+    btp.ascs_receiver_start_ready(0)
+    btp.ascs_disable(0)
+    return True
+
+def hdl_wid_306(desc):
+    # Please configure ASE state to Streaming for SINK/SOURCE ASE, Freq: 16KHz and Frame Duration: 10ms
+
+    pattern = '.*(SINK|SOURCE) ASE.*'
+    params = re.match(pattern, desc)
+    if not params:
+        logging.error("parsing error")
+        return False
+
+    (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info('16_2')
+    btp.ascs_configure_codec(0, 6, frequency_hz, frame_duration_us, octets_per_frame)
+
+    (sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms) = le_audio_qos_get_info('16_2_1')
+    btp.ascs_configure_qos(0, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
+
+    btp.ascs_enable(0)
+
+    # send receiver ready if we are sink
+    if params.group(1) == 'SOURCE':
+        btp.ascs_receiver_start_ready(0)
     return True
 
 
@@ -175,9 +200,24 @@ def hdl_wid_307(desc):
     btp.ascs_disable(0)
     return True
 
+
 def hdl_wid_309(desc):
     # Please configure ASE state to Releasing state.
     btp.ascs_release(0)
+    return True
+
+
+def hdl_wid_311(desc):
+    # Please configure 1 SOURCE ASE with Config Setting: 8_1_1.\nAfter that, configure to streaming state.
+    (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info('8_1')
+    btp.ascs_configure_codec(0, 6, frequency_hz, frame_duration_us, octets_per_frame)
+
+    (sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms) = le_audio_qos_get_info('8_1_1')
+    btp.ascs_configure_qos(0, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
+
+    btp.ascs_enable(0)
+
+    btp.ascs_receiver_start_ready(0)
     return True
 
 
@@ -199,4 +239,9 @@ def hdl_wid_315(desc):
     max_transport_latency_ms = 10
     # presentation delay 40000 us
     btp.ascs_configure_qos(0, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
+    return True
+
+
+def hdl_wid_364(desc):
+    # After processed audio stream data, please click OK.
     return True
