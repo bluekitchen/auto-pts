@@ -25,14 +25,14 @@ from autopts.pybtp.btp.btp import pts_addr_get, pts_addr_type_get, lt2_addr_get,
 from autopts.pybtp.types import BTPError, gap_settings_btp2txt, addr2btp_ba, Addr, OwnAddrType, AdDuration
 
 LE_AUDIO = {
-    "ascs_connect":               (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_CONNECT,         CONTROLLER_INDEX),
-    "ascs_configure_codec":       (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_CONFIGURE_CODEC, CONTROLLER_INDEX),
-    "ascs_configure_qos":         (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_CONFIGURE_QOS,   CONTROLLER_INDEX),
-    "ascs_enable":                (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_ENABLE,          CONTROLLER_INDEX),
-    "ascs_receiver_start_ready":  (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_ENABLE,          CONTROLLER_INDEX),
-    "ascs_receiver_stop_ready":   (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_ENABLE,          CONTROLLER_INDEX),
-    "ascs_disable":               (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_DISABLE,         CONTROLLER_INDEX),
-    "ascs_release":               (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_RELEASE,         CONTROLLER_INDEX),
+    "ascs_connect":               (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_CONNECT,              CONTROLLER_INDEX),
+    "ascs_configure_codec":       (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_CONFIGURE_CODEC,      CONTROLLER_INDEX),
+    "ascs_configure_qos":         (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_CONFIGURE_QOS,        CONTROLLER_INDEX),
+    "ascs_enable":                (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_ENABLE,               CONTROLLER_INDEX),
+    "ascs_receiver_start_ready":  (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_RECEIVER_START_READY, CONTROLLER_INDEX),
+    "ascs_receiver_stop_ready":   (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_RECEIVER_STOP_READY,  CONTROLLER_INDEX),
+    "ascs_disable":               (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_DISABLE,              CONTROLLER_INDEX),
+    "ascs_release":               (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_RELEASE,              CONTROLLER_INDEX),
 }
 
 
