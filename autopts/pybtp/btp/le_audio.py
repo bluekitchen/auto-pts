@@ -17,12 +17,27 @@
 
 import logging
 
-from struct import pack
+from struct import pack, unpack
 
 from autopts.pybtp import defs
 from autopts.pybtp.btp.btp import pts_addr_get, pts_addr_type_get, lt2_addr_get, lt2_addr_type_get, btp_hdr_check, \
     CONTROLLER_INDEX, set_pts_addr, set_lt2_addr, LeAdv, get_iut_method as get_iut
 from autopts.pybtp.types import BTPError, gap_settings_btp2txt, addr2btp_ba, Addr, OwnAddrType, AdDuration
+
+def le_audio_rsp_succ(op=None):
+    logging.debug("%s", le_audio_rsp_succ.__name__)
+
+    iutctl = get_iut()
+
+    tuple_hdr, tuple_data = iutctl.btp_socket.read()
+    logging.debug("received %r %r", tuple_hdr, tuple_data)
+
+    btp_hdr_check(tuple_hdr, defs.BTP_SERVICE_ID_LE_AUDIO, op)
+
+    return tuple_data
+
+def get_24_bit_unsigned_int(b1, b2, b3):
+    return (b1 << 16) | (b2 << 8) | b3
 
 LE_AUDIO = {
     "ascs_connect":               (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_CONNECT,              CONTROLLER_INDEX),
@@ -58,7 +73,14 @@ def ascs_configure_codec(ase_index, coding_format, sampling_frequency_hz, frame_
     channel_id = 0
     data_ba = pack('<BBBIHH', channel_id, ase_index, coding_format, sampling_frequency_hz, frame_duration_us, octets_per_frame)
 
-    iutctl.btp_socket.send_wait_rsp(*LE_AUDIO['ascs_configure_codec'], data=data_ba)
+    iutctl.btp_socket.send(*LE_AUDIO['ascs_configure_codec'], data=data_ba)
+    tuple_data = le_audio_rsp_succ()
+    data = tuple_data[0]
+    # convert 24-bit values manually
+    fields = unpack("<BBBBBB", data)
+    presentation_latency_min_us = get_24_bit_unsigned_int(fields[0], fields[1], fields[2])
+    presentation_latency_max_us = get_24_bit_unsigned_int(fields[3], fields[4], fields[5])
+    return (presentation_latency_min_us, presentation_latency_max_us)
 
 def ascs_configure_qos(ase_index, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms):
     iutctl = get_iut()
