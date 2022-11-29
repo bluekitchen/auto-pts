@@ -209,10 +209,22 @@ def hdl_wid_309(desc):
 
 def hdl_wid_311(desc):
     # Please configure 1 SOURCE ASE with Config Setting: 8_1_1.\nAfter that, configure to streaming state.
-    (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info('8_1')
+    pattern = '.*(SINK|SOURCE) ASE.* Setting: (\d+_\d+)_(\d).*'
+    params = re.match(pattern, desc)
+    if not params:
+        logging.error("parsing error")
+        return False
+
+    ase_type = params.group(1)
+    codec_name = params.group(2)
+    channels = int(params.group(3))
+    qos_name = params.group(2) + '_' + params.group(3)
+    log("ASE Codec %s, Setting %s, QoS Setting %s", ase_type, codec_name, qos_name)
+
+    (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info(codec_name)
     btp.ascs_configure_codec(0, 6, frequency_hz, frame_duration_us, octets_per_frame)
 
-    (sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms) = le_audio_qos_get_info('8_1_1')
+    (sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms) = le_audio_qos_get_info(qos_name)
     btp.ascs_configure_qos(0, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
 
     btp.ascs_enable(0)
