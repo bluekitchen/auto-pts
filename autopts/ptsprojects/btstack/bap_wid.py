@@ -208,6 +208,10 @@ def hdl_wid_309(desc):
     btp.ascs_release(0)
     return True
 
+def hdl_wid_310(desc):
+    # Please send Update Metadata Opcode with valid data.
+    btp.ascs_update_metadata(0)
+    return True
 
 def hdl_wid_311(desc):
     # Please configure 1 SOURCE ASE with Config Setting: 8_1_1.\nAfter that, configure to streaming state.

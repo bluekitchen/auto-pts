@@ -48,6 +48,7 @@ LE_AUDIO = {
     "ascs_receiver_stop_ready":   (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_RECEIVER_STOP_READY,  CONTROLLER_INDEX),
     "ascs_disable":               (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_DISABLE,              CONTROLLER_INDEX),
     "ascs_release":               (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_RELEASE,              CONTROLLER_INDEX),
+    "ascs_update_metadata":       (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_UPDATE_METADATA,      CONTROLLER_INDEX),
 }
 
 
@@ -135,3 +136,12 @@ def ascs_release(ase_index):
     data_ba = pack('<BB', channel_id, ase_index)
 
     iutctl.btp_socket.send_wait_rsp(*LE_AUDIO['ascs_release'], data=data_ba)
+
+def ascs_update_metadata(ase_index):
+    iutctl = get_iut()
+
+    # TODO use channel id returned from ascs_connect
+    channel_id = 0
+    data_ba = pack('<BB', channel_id, ase_index)
+
+    iutctl.btp_socket.send_wait_rsp(*LE_AUDIO['ascs_update_metadata'], data=data_ba)
