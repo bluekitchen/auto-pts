@@ -181,6 +181,8 @@ def hdl_wid_306(desc):
         logging.error("parsing error")
         return False
 
+    ase_type = params.group(1)
+
     (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info('16_2')
     btp.ascs_configure_codec(0, 6, frequency_hz, frame_duration_us, octets_per_frame)
 
@@ -190,7 +192,7 @@ def hdl_wid_306(desc):
     btp.ascs_enable(0)
 
     # send receiver ready if we are sink
-    if params.group(1) == 'SOURCE':
+    if ase_type == 'SOURCE':
         btp.ascs_receiver_start_ready(0)
     return True
 
@@ -229,7 +231,9 @@ def hdl_wid_311(desc):
 
     btp.ascs_enable(0)
 
-    btp.ascs_receiver_start_ready(0)
+    # send receiver ready if we are sink
+    if ase_type == 'SOURCE':
+        btp.ascs_receiver_start_ready(0)
     return True
 
 
