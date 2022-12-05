@@ -1018,7 +1018,10 @@ def is_procedure_done(list, cnt):
 class LeAudio:
     def __init__(self):
         self.ascs_active = False
+        self.ascs_clients = []
         self.octets_per_frame = 0
+        self.codec = "8_1"
+        self.audio_configuration = "AC 1"
 
     def ascs_is_connected(self):
         return self.ascs_active
@@ -1030,14 +1033,22 @@ class LeAudio:
         self.ascs_active = False
 
     # PTS Dialog for BAP/UCL/SCC/.. does not indicate which variant to use for 48 kHz, until this is
-    # fixed we hard-code octets_per_frame
+    # fixed we hard-code octets_per_frame or codec
 
-    def set_octets_per_frame(self, octets):
-        logging.debug("LE Audio: set octets per frame: %s", octets)
-        self.octets_per_frame = octets
+    def set_codec(self, codec):
+        logging.debug("LE Audio: set codec name: %s", codec)
+        self.codec = codec
 
-    def get_octets_per_frame(self):
-        return self.octets_per_frame
+    def get_codec(self):
+        return self.codec
+
+    def set_audio_configuration(self, audio_configuration):
+        logging.debug("LE Audio: set audio configuration: %s", audio_configuration)
+        self.audio_configuration = audio_configuration
+
+    def get_audio_configuration(self):
+        return self.audio_configuration
+
 
 class GattCl:
     def __init__(self):
@@ -1164,8 +1175,11 @@ class Stack:
         self.le_audio = LeAudio()
 
     # helper to call from test case
-    def le_audio_set_octets_per_frame(self, octets):
-        self.le_audio.set_octets_per_frame(octets)
+    def le_audio_set_codec(self, codec):
+        self.le_audio_set_codec(codec)
+
+    def le_audio_set_audio_configuration(self, audio_configuration):
+        self.le_audio.set_audio_configuration(audio_configuration)
 
     def synch_init(self, sync_callbacks):
         if not self.synch:

@@ -62,13 +62,64 @@ def test_cases(ptses):
         TestFunc(btp.set_pts_addr, pts_bd_addr, Addr.le_public)
     ]
 
-    # provide octets_per_frame for BAP/UCL/SCC/BV-001-C - BAP/UCL/SCC/BV-032-C
     custom_test_cases = []
-    octets_001_032 = 2 * [26, 30,  30,40,  45,60, 60,80,  97,130,  75, 100,  90, 120,  117, 155]
-    for (i, octets) in zip(range(1,33), octets_001_032):
+
+    # provide codec configuration for BAP/UCL/SCC/BV-001-C - BAP/UCL/SCC/BV-032-C
+    # PTS 8.3 shows frequency and frame duration, but not octets per frame
+    test_codec_configurations = [
+        ("BAP/UCL/SCC/BV-001-C", "8_1"),
+        ("BAP/UCL/SCC/BV-002-C", "8_2"),
+        ("BAP/UCL/SCC/BV-003-C", "16_1"),
+        ("BAP/UCL/SCC/BV-004-C", "16_2"),
+        ("BAP/UCL/SCC/BV-005-C", "24_1"),
+        ("BAP/UCL/SCC/BV-006-C", "24_2"),
+        ("BAP/UCL/SCC/BV-007-C", "32_1"),
+        ("BAP/UCL/SCC/BV-008-C", "32_2"),
+        ("BAP/UCL/SCC/BV-009-C", "441_1"),
+        ("BAP/UCL/SCC/BV-010-C", "441_2"),
+        ("BAP/UCL/SCC/BV-011-C", "48_1"),
+        ("BAP/UCL/SCC/BV-012-C", "48_2"),
+        ("BAP/UCL/SCC/BV-013-C", "48_3"),
+        ("BAP/UCL/SCC/BV-014-C", "48_4"),
+        ("BAP/UCL/SCC/BV-015-C", "48_5"),
+        ("BAP/UCL/SCC/BV-016-C", "48_6"),
+        ("BAP/UCL/SCC/BV-017-C", "8_1"),
+        ("BAP/UCL/SCC/BV-018-C", "8_2"),
+        ("BAP/UCL/SCC/BV-019-C", "16_1"),
+        ("BAP/UCL/SCC/BV-020-C", "16_2"),
+        ("BAP/UCL/SCC/BV-021-C", "24_1"),
+        ("BAP/UCL/SCC/BV-022-C", "24_2"),
+        ("BAP/UCL/SCC/BV-023-C", "32_1"),
+        ("BAP/UCL/SCC/BV-024-C", "32_2"),
+        ("BAP/UCL/SCC/BV-025-C", "441_1"),
+        ("BAP/UCL/SCC/BV-026-C", "441_2"),
+        ("BAP/UCL/SCC/BV-027-C", "48_1"),
+        ("BAP/UCL/SCC/BV-028-C", "48_2"),
+        ("BAP/UCL/SCC/BV-029-C", "48_3"),
+        ("BAP/UCL/SCC/BV-030-C", "48_4"),
+        ("BAP/UCL/SCC/BV-031-C", "48_5"),
+        ("BAP/UCL/SCC/BV-032-C", "48_6"),
+    ]
+    for (test_case, audio_configuration) in test_codec_configurations:
         custom_test_cases.append(
-            ZTestCase("BAP", "BAP/UCL/SCC/BV-%03u-C" % i,
-                      cmds=pre_conditions + [TestFunc(stack.le_audio_set_octets_per_frame, octets)],
+            ZTestCase("BAP", test_case,
+                      cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
+                      generic_wid_hdl=bap_wid_hdl),
+        )
+
+    # set audio configuration from BAP TS
+    test_audio_configurations = [
+        ("BAP/UCL/STR/BV-142-C", "AC 3"),
+        ("BAP/UCL/STR/BV-143-C", "AC 5"),
+        ("BAP/UCL/STR/BV-144-C", "AC 7(i)"),
+        ("BAP/UCL/STR/BV-523-C", "AC 3"),
+        ("BAP/UCL/STR/BV-524-C", "AC 5"),
+        ("BAP/UCL/STR/BV-525-C", "AC 7(i)"),
+    ]
+    for (test_case, audio_configuration) in test_audio_configurations:
+        custom_test_cases.append(
+            ZTestCase("BAP", test_case,
+                      cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
                       generic_wid_hdl=bap_wid_hdl),
         )
 
