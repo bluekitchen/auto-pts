@@ -340,16 +340,26 @@ def hdl_wid_310(desc):
 
 def hdl_wid_311(desc):
     # Please configure 1 SOURCE ASE with Config Setting: 8_1_1.\nAfter that, configure to streaming state.
-    pattern = '.*(SINK|SOURCE) ASE.* Setting: (\d+_\d+)_(\d).*'
+    # Please configure 1 SINK ASE with Config Setting: IXIT.\n
+    pattern = ".*(SINK|SOURCE) ASE.*Config Setting: (\w+)\."
     params = re.match(pattern, desc)
     if not params:
-        logging.error("parsing error")
+        logging.error("parsing error in desc")
         return False
-
     ase_type = params.group(1)
-    codec = params.group(2)
-    channels = int(params.group(3))
-    qos = params.group(2) + '_' + params.group(3)
+    qos_string = params.group(2)
+
+    if qos_string == "IXIT":
+        codec = '16_2'
+        qos = '16_2_1'
+    else:
+        pattern = '(\d+_\d+)_(\d)'
+        params = re.match(pattern, qos_string)
+        if not params:
+            logging.error("parsing error in " + qos_string)
+            return False
+        codec = params.group(1)
+        qos = params.group(1) + '_' + params.group(2)
     log("ASE Codec %s, Setting %s, QoS Setting %s", ase_type, codec, qos)
 
     stack = get_stack()
