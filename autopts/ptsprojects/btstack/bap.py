@@ -3,7 +3,7 @@
 from autopts.pybtp import btp
 from autopts.pybtp.types import Addr, IOCap, AdType, AdFlags, Prop, Perm, UUID
 from autopts.ptsprojects.testcase import TestFunc
-from autopts.ptsprojects.btstack.ztestcase import ZTestCase
+from autopts.ptsprojects.btstack.ztestcase import ZTestCase, ZTestCaseSlave
 from autopts.ptsprojects.btstack.bap_wid import bap_wid_hdl
 from autopts.ptsprojects.stack import get_stack
 from autopts.client import get_unique_name
@@ -24,42 +24,47 @@ def set_pixits(ptses):
     PTS.
 
     ptses -- list of PyPTS instances"""
-    pts = ptses[0]
 
-    # Set BAP common PIXIT values
+    for pts in ptses:
+        # Set BAP common PIXIT values
 
-    # Needed to pass BAP/UCL/SCC/BV-033-C, BAP/UCL/SCC/BV-034-C, ..
-    pts.set_pixit("BAP", "TSPX_Codec_ID", "FF00000000")
+        # Needed to pass BAP/UCL/SCC/BV-033-C, BAP/UCL/SCC/BV-034-C, ..
+        pts.set_pixit("BAP", "TSPX_Codec_ID", "FF00000000")
+
+
 
 def test_cases(ptses):
     """Returns a list of GAP test cases
     ptses -- list of PyPTS instances"""
 
-    pts = ptses[0]
-    pts_bd_addr = pts.q_bd_addr
+    pts_lt1 = ptses[0]
+    pts_lt1_bd_addr = pts_lt1.q_bd_addr
 
     stack = get_stack()
+    iut_device_name = get_unique_name(pts_lt1)
+    stack.gap_init( iut_device_name,iut_manufacturer_data, iut_appearance, iut_svc_data, iut_flags, iut_svcs)
 
-    iut_device_name = get_unique_name(pts)
+    btp.set_pts_addr(pts_lt1_bd_addr, Addr.le_public)
 
     pre_conditions = [
-        TestFunc(stack.gap_init, iut_device_name,
-                 iut_manufacturer_data, iut_appearance, iut_svc_data, iut_flags,
-                 iut_svcs),
         TestFunc(stack.le_audio_init),
         TestFunc(btp.core_reg_svc_gap),
         TestFunc(btp.gap_set_powered_on),
         TestFunc(btp.gap_read_ctrl_info),
-        TestFunc(lambda: pts.update_pixit_param(
+        TestFunc(lambda: pts_lt1.update_pixit_param(
             "BAP", "TSPX_bd_addr_iut",
             stack.gap.iut_addr_get_str())),
-        TestFunc(lambda: pts.update_pixit_param(
+        TestFunc(lambda: pts_lt1.update_pixit_param(
             "BAP", "TSPX_delete_link_key", "TRUE")),
+    ]
 
-        # We do this on test case, because previous one could update
-        # this if RPA was used by PTS
-        # TODO: Get PTS address type
-        TestFunc(btp.set_pts_addr, pts_bd_addr, Addr.le_public)
+    # Preconditions for Lower Tester 2
+    pre_conditions_lt2 = [
+        TestFunc(lambda: pts_lt2.update_pixit_param(
+            "BAP", "TSPX_bd_addr_iut",
+            stack.gap.iut_addr_get_str())),
+        TestFunc(lambda: pts_lt2.update_pixit_param(
+            "BAP", "TSPX_delete_link_key", "TRUE")),
     ]
 
     custom_test_cases = []
@@ -115,6 +120,7 @@ def test_cases(ptses):
         ("BAP/UCL/STR/BV-523-C", "AC 3"),
         ("BAP/UCL/STR/BV-524-C", "AC 5"),
         ("BAP/UCL/STR/BV-525-C", "AC 7(i)"),
+        ("BAP/UCL/STR/BV-267-C", "AC 6(i)"),
     ]
     for (test_case, audio_configuration) in test_audio_configurations:
         custom_test_cases.append(
@@ -123,8 +129,23 @@ def test_cases(ptses):
                       generic_wid_hdl=bap_wid_hdl),
         )
 
-    test_case_name_list = pts.get_test_case_list('BAP')
+    test_case_name_list = pts_lt1.get_test_case_list('BAP')
     tc_list = []
+
+    # Test Cases that requires LT2
+    test_cases_lt2 = [
+        ZTestCase("BAP", "BAP/UCL/STR/BV-235-C",
+                    cmds=pre_conditions,
+                    generic_wid_hdl=bap_wid_hdl,
+                    lt2="BAP/UCL/STR/BV-235-C_LT2")
+    ]
+
+    # Test Cases for LT2
+    test_cases_slaves = [
+        ZTestCaseSlave("BAP", "BAP/UCL/STR/BV-235-C_LT2",
+                       cmds=pre_conditions_lt2,
+                       generic_wid_hdl=bap_wid_hdl)
+    ]
 
     for tc_name in test_case_name_list:
         # setup generic test case with pre_condition and bap wid hdl()
@@ -133,11 +154,17 @@ def test_cases(ptses):
                              generic_wid_hdl=bap_wid_hdl)
 
         # use custom test case if defined above
-        for custom_tc in custom_test_cases:
+        for custom_tc in custom_test_cases + test_cases_lt2:
             if tc_name == custom_tc.name:
                 instance = custom_tc
                 break
 
         tc_list.append(instance)
+
+    if len(ptses) == 2:
+        tc_list += test_cases_slaves
+        pts_lt2 = ptses[1]
+        pts_lt2_bd_addr = pts_lt2.q_bd_addr
+        btp.set_lt2_addr(pts_lt2_bd_addr, Addr.le_public)
 
     return tc_list

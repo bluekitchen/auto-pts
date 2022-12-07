@@ -31,6 +31,7 @@ codec_specific_config_settings = [
     ("48_6", 48000, 10000, 155),
 ]
 
+
 # name, sdu interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms
 qos_config_settings = [
     ("8_1_1", 7500, 0, 26, 2, 8),
@@ -66,6 +67,7 @@ qos_config_settings = [
     ("48_5_2", 7500, 0, 117, 13, 75),
     ("48_6_2", 10000, 0, 115, 13, 100)
 ]
+
 
 # Audio Configuration from BAP TS
 # - Each configuration has number of servers and an array of CIS entries
@@ -110,6 +112,7 @@ def le_audio_qos_get_info(qos_name):
 def le_audio_audio_configuration_get_info(audio_configuration_name):
     return audio_configurations[audio_configuration_name]
 
+
 def get_any_ase_id(ascs_client):
     sink_ases = ascs_client['sink_ases']
     source_ases = ascs_client['source_ases']
@@ -139,11 +142,21 @@ def le_audio_configure_lc3(ascs_chan_id, ase_id, codec):
     log("ASE Codec LC3 frequency %u hz, frame duration %u us, octets per frame %u", frequency_hz, frame_duration_us, octets_per_frame)
     btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
 
+
 def le_audio_configure_qos(ascs_chan_id, codec, qos, audio_conffiguration, ):
     # configure codec
     # create cig
     # configure cis
     pass
+
+
+# Test Cases with _LT2 suffix are the second PTS
+def get_bd_addr_for_test_case_name(test_case_name):
+    if test_case_name.endswith('LT2'):
+        return btp.pts_addr_get()
+    else:
+        return btp.lt2_addr_get()
+
 
 # try to use local handler and fall back to gap handler
 def bap_wid_hdl(wid, description, test_case_name):
@@ -153,12 +166,12 @@ def bap_wid_hdl(wid, description, test_case_name):
 
     try:
         handler = getattr(module, "hdl_wid_%d" % wid)
-        return handler(description)
+        return handler(WIDParams(wid, description, test_case_name))
     except AttributeError:
         return gen_wid_hdl(wid, description, test_case_name, False)
 
 
-def hdl_wid_302(desc):
+def hdl_wid_302(_: WIDParams):
     # Please configure ASE state to CODEC configured with ? ASE, Freq: ? KHz, Frame Duration: ? ms
     # we use codec info from test specification as octets per frame is not providd by PTS
 
@@ -172,10 +185,10 @@ def hdl_wid_302(desc):
     return True
 
 
-def hdl_wid_303(desc):
+def hdl_wid_303(params: WIDParams):
     # Please configure ASE state to QoS Configured with 8_1_1 in SINK direction
     pattern = '.* (\d+_\d+)_(\d) .* (SINK|SOURCE) .*'
-    params = re.match(pattern, desc)
+    params = re.match(pattern, params.description)
     if not params:
         logging.error("parsing error")
         return False
@@ -210,7 +223,7 @@ def hdl_wid_303(desc):
     return True
 
 
-def hdl_wid_304(desc):
+def hdl_wid_304(params: WIDParams):
     # Please configure ASE state to Enabling for SOURCE ASE, Freq: 16KHz and Frame Duration: 10ms
     stack = get_stack()
     ascs_client_0 = stack.le_audio.ascs_clients[0]
@@ -235,7 +248,7 @@ def hdl_wid_304(desc):
     return True
 
 
-def hdl_wid_305(desc):
+def hdl_wid_305(params: WIDParams):
     # Please configure ASE state to Enabling for SOURCE ASE, Freq: 16KHz and Frame Duration: 10ms
 
     stack = get_stack()
@@ -265,10 +278,10 @@ def hdl_wid_305(desc):
     return True
 
 
-def hdl_wid_306(desc):
+def hdl_wid_306(params: WIDParams):
     # Please configure ASE state to Streaming for SINK/SOURCE ASE, Freq: 16KHz and Frame Duration: 10ms
     pattern = '.*(SINK|SOURCE) ASE.*'
-    params = re.match(pattern, desc)
+    params = re.match(pattern, params.description)
     if not params:
         logging.error("parsing error")
         return False
@@ -308,7 +321,7 @@ def hdl_wid_306(desc):
     return True
 
 
-def hdl_wid_307(desc):
+def hdl_wid_307(params: WIDParams):
     # Please configure ASE state to Disabling state. If server is Source, please initiate Receiver Stop Ready
     stack = get_stack()
     ascs_client_0 = stack.le_audio.ascs_clients[0]
@@ -318,7 +331,7 @@ def hdl_wid_307(desc):
     return True
 
 
-def hdl_wid_309(desc):
+def hdl_wid_309(params: WIDParams):
     # Please configure ASE state to Releasing state.
     stack = get_stack()
     ascs_client_0 = stack.le_audio.ascs_clients[0]
@@ -328,7 +341,7 @@ def hdl_wid_309(desc):
     return True
 
 
-def hdl_wid_310(desc):
+def hdl_wid_310(params: WIDParams):
     # Please send Update Metadata Opcode with valid data.
     stack = get_stack()
     ascs_client_0 = stack.le_audio.ascs_clients[0]
@@ -338,13 +351,13 @@ def hdl_wid_310(desc):
     return True
 
 
-def hdl_wid_311(desc):
+def hdl_wid_311(params: WIDParams):
     # Please configure 1 SOURCE ASE with Config Setting: 8_1_1.\nAfter that, configure to streaming state.
-    # Please configure 1 SINK ASE with Config Setting: IXIT.\n
+    # Please configure 1 SINK ASE with Config Setting: IXIT.\nAfter that, configure to streaming state.
     pattern = ".*(SINK|SOURCE) ASE.*Config Setting: (\w+)\."
-    params = re.match(pattern, desc)
+    params = re.match(pattern, params.description)
     if not params:
-        logging.error("parsing error in desc")
+        logging.error("parsing error in description")
         return False
     ase_type = params.group(1)
     qos_string = params.group(2)
@@ -395,13 +408,13 @@ def hdl_wid_311(desc):
     return True
 
 
-def hdl_wid_313(desc):
+def hdl_wid_313(params: WIDParams):
     # Please configure 1 SINK and 1 SOURCE ASE with Config Setting: 16_2_1.\nAfter that, configure both ASEes to streaming state
     # Please configure 1 SINK and 1 SOURCE ASE with Config Setting: IXIT.\nAfter that, configure both ASEes to streaming state.
     pattern = ".*Config Setting: (\w+)\."
-    params = re.match(pattern, desc)
+    params = re.match(pattern, params.description)
     if not params:
-        logging.error("parsing error in desc")
+        logging.error("parsing error in description")
         return False
 
     if params.group(1) == "IXIT":
@@ -473,7 +486,7 @@ def hdl_wid_313(desc):
     return True
 
 
-def hdl_wid_314(desc):
+def hdl_wid_314(params: WIDParams):
     # Please configure ASE state to CODEC configured with Vendor specific parameter in SOURCE/SINK ASE
     stack = get_stack()
     ascs_client_0 = stack.le_audio.ascs_clients[0]
@@ -483,10 +496,10 @@ def hdl_wid_314(desc):
     return True
 
 
-def hdl_wid_315(desc):
+def hdl_wid_315(params: WIDParams):
     # Please configure ASE state to QoS Configured with Vendor specific parameter in SOURCE/SINK ASE.
     pattern = '.*(SINK|SOURCE) ASE.*'
-    params = re.match(pattern, desc)
+    params = re.match(pattern, params.description)
     if not params:
         logging.error("parsing error")
         return False
@@ -524,18 +537,20 @@ def hdl_wid_315(desc):
     return True
 
 
-def hdl_wid_364(desc):
+def hdl_wid_364(params: WIDParams):
     # After processed audio stream data, please click OK.
     return True
 
 
-def hdl_wid_20100(desc):
+def hdl_wid_20100(params: WIDParams):
     # 'Please initiate a GATT connection to the PTS.'
-    btp.gap_conn()
+    bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
+    log("%s -> %s", params.test_case_name, bd_addr)
+    btp.gap_conn(bd_addr)
     return True
 
 
-def hdl_wid_20106(desc):
+def hdl_wid_20106(params: WIDParams):
     # 'Please write to Client Characteristic Configuration Descriptor..'
     stack = get_stack()
     if not stack.le_audio.ascs_is_connected():
