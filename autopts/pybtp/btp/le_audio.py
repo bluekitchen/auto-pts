@@ -55,25 +55,28 @@ LE_AUDIO = {
     "ascs_update_metadata":       (defs.BTP_SERVICE_ID_LE_AUDIO, defs.ASCS_UPDATE_METADATA,      CONTROLLER_INDEX),
     "cig_create":                 (defs.BTP_SERVICE_ID_LE_AUDIO, defs.CIG_CREATE,                CONTROLLER_INDEX),
     "cis_create":                 (defs.BTP_SERVICE_ID_LE_AUDIO, defs.CIS_CREATE,                CONTROLLER_INDEX),
+    "cis_start_streaming":        (defs.BTP_SERVICE_ID_LE_AUDIO, defs.CIS_START_STREAMING,       CONTROLLER_INDEX),
 }
 
 
 def ascs_connect(bd_addr=None, bd_addr_type=None, own_addr_type=OwnAddrType.le_identity_address):
+    # lookup pts if bd_addr not specified
+    ba_addr = pts_addr_get(bd_addr)
+    ba_addr_type = pts_addr_type_get(bd_addr_type)
     logging.debug("%s %r %r", ascs_connect.__name__, bd_addr, bd_addr_type)
+
     iutctl = get_iut()
-    statck = get_stack()
 
     data_ba = bytearray()
-    bd_addr_ba = addr2btp_ba(pts_addr_get(bd_addr))
-    bd_addr_type_ba = chr(pts_addr_type_get(bd_addr_type)).encode('utf-8')
+    bd_addr_ba = addr2btp_ba(ba_addr)
+    bd_addr_type_ba = chr(ba_addr_type).encode('utf-8')
     own_addr_type_ba = chr(own_addr_type).encode('utf-8')
 
     data_ba.extend(bd_addr_type_ba)
     data_ba.extend(bd_addr_ba)
     data_ba.extend(own_addr_type_ba)
 
-    iutctl.btp_socket.send(*LE_AUDIO['ascs_connect'], data=data_ba)
-    tuple_data = le_audio_rsp_succ()
+    tuple_data = iutctl.btp_socket.send_wait_rsp(*LE_AUDIO['ascs_connect'], data=data_ba)
     data = tuple_data[0]
 
     header = data[0:2]
@@ -92,16 +95,16 @@ def ascs_connect(bd_addr=None, bd_addr_type=None, own_addr_type=OwnAddrType.le_i
             source_ases.append(ase_id)
     ascs_client = {'bd_addr': bd_addr, 'sink_ases': sink_ases, 'source_ases': source_ases, 'chan_id': chan_id}
     logging.debug("ASCS: SINK ASEs %r, SOURCE ASEs %r", sink_ases, source_ases)
-    get_stack().le_audio.ascs_clients.append(ascs_client)
+    get_stack().le_audio.ascs_connected(bd_addr, ascs_client)
+    return ascs_client
 
 
-def ascs_configure_codec(chan_id, ase_id, coding_format, sampling_frequency_hz, frame_duration_us, octets_per_frame):
+def ascs_configure_codec(chan_id, ase_id, coding_format, sampling_frequency_hz, frame_duration_us, audio_locations, octets_per_frame):
     iutctl = get_iut()
 
-    data_ba = pack('<BBBIHH', chan_id, ase_id, coding_format, sampling_frequency_hz, frame_duration_us, octets_per_frame)
+    data_ba = pack('<BBBIHIH', chan_id, ase_id, coding_format, sampling_frequency_hz, frame_duration_us, audio_locations, octets_per_frame)
 
-    iutctl.btp_socket.send(*LE_AUDIO['ascs_configure_codec'], data=data_ba)
-    tuple_data = le_audio_rsp_succ()
+    tuple_data = iutctl.btp_socket.send_wait_rsp(*LE_AUDIO['ascs_configure_codec'], data=data_ba)
     data = tuple_data[0]
     # convert 24-bit values manually
     fields = unpack("<BBBBBB", data)
@@ -178,9 +181,28 @@ def cig_create(cig_id, sdu_interval_c_to_p_us, sdu_interval_p_to_c_us, framing, 
 
     iutctl.btp_socket.send_wait_rsp(*LE_AUDIO['cig_create'], data=data_ba)
 
-def cis_create(cig_id):
+
+def cis_create(cig_id, cis_associations):
+    logging.debug("%s cig_id %u, num_cis %u", cis_create.__name__, cig_id, len(cis_associations))
+
     iutctl = get_iut()
 
-    data_ba = pack('<B', cig_id)
+    data_ba = bytearray()
+    data_ba.extend(pack('<BB', cig_id, len(cis_associations)))
+    for (cis_id, bd_addr_type, bd_addr) in cis_associations:
+        bd_addr_type = pts_addr_type_get(bd_addr_type)
+        bd_addr = pts_addr_get(bd_addr)
+        logging.debug("%s cig_id %u cis_id %u %r %r", cis_create.__name__, cig_id, cis_id, bd_addr_type, bd_addr)
+        data_ba.extend(pack('<BB', cis_id, bd_addr_type))
+        data_ba.extend(addr2btp_ba(bd_addr))
 
     iutctl.btp_socket.send_wait_rsp(*LE_AUDIO['cis_create'], data=data_ba)
+
+
+def cis_start_streaming(cig_id, cis_id):
+    logging.debug("%s cig_id %u, cis_id %u", cis_start_streaming.__name__, cig_id, cis_id)
+    iutctl = get_iut()
+
+    data_ba = pack('<BB', cig_id, cis_id)
+
+    iutctl.btp_socket.send_wait_rsp(*LE_AUDIO['cis_start_streaming'], data=data_ba)

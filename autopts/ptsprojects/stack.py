@@ -1017,20 +1017,28 @@ def is_procedure_done(list, cnt):
 
 class LeAudio:
     def __init__(self):
-        self.ascs_active = False
-        self.ascs_clients = []
+        self.ascs_clients = {}
         self.octets_per_frame = 0
         self.codec = "8_1"
         self.audio_configuration = "AC 1"
+        self.cig_active = False
 
-    def ascs_is_connected(self):
-        return self.ascs_active
+    def ascs_get_info(self, bd_addr):
+        if bd_addr in self.ascs_clients:
+            return self.ascs_clients[bd_addr]
+        return None
 
-    def ascs_connected(self):
-        self.ascs_active = True
+    def ascs_connected(self, bd_addr, chan_id):
+        self.ascs_clients[bd_addr] = chan_id
 
-    def ascs_disconnected(self):
-        self.ascs_active = False
+    def ascs_disconnected(self, bd_addr):
+        del self.ascs_clients[bd_addr]
+
+    def cig_created(self):
+        self.cig_active = True
+
+    def cig_exists(self):
+        return self.cig_active
 
     # PTS Dialog for BAP/UCL/SCC/.. does not indicate which variant to use for 48 kHz, until this is
     # fixed we hard-code octets_per_frame or codec
@@ -1048,6 +1056,7 @@ class LeAudio:
 
     def get_audio_configuration(self):
         return self.audio_configuration
+
 
 
 class GattCl:

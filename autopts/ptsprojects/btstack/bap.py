@@ -1,11 +1,12 @@
 """BAP test cases"""
+from time import sleep
 
 from autopts.pybtp import btp
 from autopts.pybtp.types import Addr, IOCap, AdType, AdFlags, Prop, Perm, UUID
 from autopts.ptsprojects.testcase import TestFunc
 from autopts.ptsprojects.btstack.ztestcase import ZTestCase, ZTestCaseSlave
 from autopts.ptsprojects.btstack.bap_wid import bap_wid_hdl
-from autopts.ptsprojects.stack import get_stack
+from autopts.ptsprojects.stack import get_stack, SynchPoint
 from autopts.client import get_unique_name
 
 ut_device_name = 'Tester'.encode('utf-8')
@@ -27,10 +28,20 @@ def set_pixits(ptses):
 
     for pts in ptses:
         # Set BAP common PIXIT values
+        pts.set_pixit("BAP", "TSPX_delete_link_key", "TRUE")
 
         # Needed to pass BAP/UCL/SCC/BV-033-C, BAP/UCL/SCC/BV-034-C, ..
         pts.set_pixit("BAP", "TSPX_Codec_ID", "FF00000000")
 
+
+# When called by LT2, BD ADDR might not be set, let's wait until it becomes ready
+def iut_addr_get_str_spin_lock():
+    stack = get_stack()
+    while True:
+        addr = stack.gap.iut_addr_get_str()
+        if addr != "000000000000":
+            return addr
+        sleep(0.1)
 
 
 def test_cases(ptses):
@@ -42,7 +53,7 @@ def test_cases(ptses):
 
     stack = get_stack()
     iut_device_name = get_unique_name(pts_lt1)
-    stack.gap_init( iut_device_name,iut_manufacturer_data, iut_appearance, iut_svc_data, iut_flags, iut_svcs)
+    stack.gap_init(iut_device_name, iut_manufacturer_data, iut_appearance, iut_svc_data, iut_flags, iut_svcs)
 
     btp.set_pts_addr(pts_lt1_bd_addr, Addr.le_public)
 
@@ -52,19 +63,13 @@ def test_cases(ptses):
         TestFunc(btp.gap_set_powered_on),
         TestFunc(btp.gap_read_ctrl_info),
         TestFunc(lambda: pts_lt1.update_pixit_param(
-            "BAP", "TSPX_bd_addr_iut",
-            stack.gap.iut_addr_get_str())),
-        TestFunc(lambda: pts_lt1.update_pixit_param(
-            "BAP", "TSPX_delete_link_key", "TRUE")),
+            "BAP", "TSPX_bd_addr_iut", stack.gap.iut_addr_get_str())),
     ]
 
     # Preconditions for Lower Tester 2
     pre_conditions_lt2 = [
         TestFunc(lambda: pts_lt2.update_pixit_param(
-            "BAP", "TSPX_bd_addr_iut",
-            stack.gap.iut_addr_get_str())),
-        TestFunc(lambda: pts_lt2.update_pixit_param(
-            "BAP", "TSPX_delete_link_key", "TRUE")),
+            "BAP", "TSPX_bd_addr_iut", iut_addr_get_str_spin_lock())),
     ]
 
     custom_test_cases = []
@@ -137,12 +142,19 @@ def test_cases(ptses):
         ZTestCase("BAP", "BAP/UCL/STR/BV-235-C",
                     cmds=pre_conditions,
                     generic_wid_hdl=bap_wid_hdl,
-                    lt2="BAP/UCL/STR/BV-235-C_LT2")
+                    lt2="BAP/UCL/STR/BV-235-C_LT2"),
+        ZTestCase("BAP", "BAP/UCL/STR/BV-526-C",
+                  cmds=pre_conditions,
+                  generic_wid_hdl=bap_wid_hdl,
+                  lt2="BAP/UCL/STR/BV-526-C_LT2")
     ]
 
     # Test Cases for LT2
     test_cases_slaves = [
         ZTestCaseSlave("BAP", "BAP/UCL/STR/BV-235-C_LT2",
+                       cmds=pre_conditions_lt2,
+                       generic_wid_hdl=bap_wid_hdl),
+        ZTestCaseSlave("BAP", "BAP/UCL/STR/BV-526-C_LT2",
                        cmds=pre_conditions_lt2,
                        generic_wid_hdl=bap_wid_hdl)
     ]

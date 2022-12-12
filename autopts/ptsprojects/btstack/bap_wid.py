@@ -7,7 +7,7 @@ from time import sleep
 from autopts.pybtp import btp
 from autopts.wid.gap import gap_wid_hdl as gen_wid_hdl, hdl_wid_139_mode1_lvl2, hdl_wid_139_mode1_lvl4
 from autopts.ptsprojects.stack import get_stack
-from autopts.pybtp.types import WIDParams, IOCap
+from autopts.pybtp.types import WIDParams, IOCap, Addr
 
 log = logging.debug
 
@@ -153,9 +153,9 @@ def le_audio_configure_qos(ascs_chan_id, codec, qos, audio_conffiguration, ):
 # Test Cases with _LT2 suffix are the second PTS
 def get_bd_addr_for_test_case_name(test_case_name):
     if test_case_name.endswith('LT2'):
-        return btp.pts_addr_get()
-    else:
         return btp.lt2_addr_get()
+    else:
+        return btp.pts_addr_get()
 
 
 # try to use local handler and fall back to gap handler
@@ -171,38 +171,40 @@ def bap_wid_hdl(wid, description, test_case_name):
         return gen_wid_hdl(wid, description, test_case_name, False)
 
 
-def hdl_wid_302(_: WIDParams):
+def hdl_wid_302(params: WIDParams):
     # Please configure ASE state to CODEC configured with ? ASE, Freq: ? KHz, Frame Duration: ? ms
     # we use codec info from test specification as octets per frame is not providd by PTS
 
     stack = get_stack()
-    ascs_client_0 = stack.le_audio.ascs_clients[0]
-    ascs_chan_id_0 = ascs_client_0['chan_id']
-    ase_id = get_any_ase_id(ascs_client_0)
+    bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
+    ascs_client = stack.le_audio.ascs_get_info(bd_addr)
+    ascs_chan_id = ascs_client['chan_id']
+    ase_id = get_any_ase_id(ascs_client)
     codec = stack.le_audio.get_codec()
 
-    le_audio_configure_lc3(ascs_chan_id_0, ase_id, codec)
+    le_audio_configure_lc3(ascs_chan_id, ase_id, codec)
     return True
 
 
 def hdl_wid_303(params: WIDParams):
     # Please configure ASE state to QoS Configured with 8_1_1 in SINK direction
     pattern = '.* (\d+_\d+)_(\d) .* (SINK|SOURCE) .*'
-    params = re.match(pattern, params.description)
-    if not params:
+    desc_match = re.match(pattern, params.description)
+    if not desc_match:
         logging.error("parsing error")
         return False
-    codec = params.group(1)
-    channels = int(params.group(2))
-    qos = params.group(1) + '_' + params.group(2)
-    ase_type = params.group(3)
+    codec = desc_match.group(1)
+    channels = int(desc_match.group(2))
+    qos = desc_match.group(1) + '_' + desc_match.group(2)
+    ase_type = desc_match.group(3)
 
     log("ASE Codec Setting %s, QoS Setting %s, type %s", codec, qos, ase_type)
 
     stack = get_stack()
-    ascs_client_0 = stack.le_audio.ascs_clients[0]
-    ascs_chan_id_0 = ascs_client_0['chan_id']
-    ase_id = get_ase_id_for_type(ascs_client_0, ase_type)
+    bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
+    ascs_client = stack.le_audio.ascs_get_info(bd_addr)
+    ascs_chan_id = ascs_client['chan_id']
+    ase_id = get_ase_id_for_type(ascs_client, ase_type)
     cig_id = 1
     cis_id = 1
     framing = 0
@@ -210,7 +212,7 @@ def hdl_wid_303(params: WIDParams):
     # Codec
     frequency_hz, frame_duration_us, octets_per_frame = le_audio_codec_get_info(codec)
     log("ASE Codec LC3 frequency %u hz, frame duration %u us, octets per frame %u", frequency_hz, frame_duration_us, octets_per_frame)
-    btp.ascs_configure_codec(ascs_chan_id_0, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
+    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
 
     # CIG / QoS
     if ase_type == "SOURCE":
@@ -219,20 +221,21 @@ def hdl_wid_303(params: WIDParams):
         cis_params = [(cis_id, octets_per_frame, 0)]
     sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms = le_audio_qos_get_info(qos)
     btp.cig_create(cig_id, sdu_interval_us, sdu_interval_us, framing, cis_params)
-    btp.ascs_configure_qos(ascs_chan_id_0, ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
+    btp.ascs_configure_qos(ascs_chan_id, ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
     return True
 
 
 def hdl_wid_304(params: WIDParams):
     # Please configure ASE state to Enabling for SOURCE ASE, Freq: 16KHz and Frame Duration: 10ms
     stack = get_stack()
-    ascs_client_0 = stack.le_audio.ascs_clients[0]
-    ascs_chan_id_0 = ascs_client_0['chan_id']
-    ase_id = get_ase_id_for_type(ascs_client_0, "SOURCE")
+    bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
+    ascs_client = stack.le_audio.ascs_get_info(bd_addr)
+    ascs_chan_id = ascs_client['chan_id']
+    ase_id = get_ase_id_for_type(ascs_client, "SOURCE")
 
     # Codec
     (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info('16_2')
-    btp.ascs_configure_codec(ascs_chan_id_0, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
+    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
 
     # CIG / QoS - SOURCE
     cig_id = 1
@@ -241,10 +244,10 @@ def hdl_wid_304(params: WIDParams):
     cis_params = [(cis_id, 0, octets_per_frame)]
     sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms = le_audio_qos_get_info('16_2_1')
     btp.cig_create(cig_id, sdu_interval_us, sdu_interval_us, framing, cis_params)
-    btp.ascs_configure_qos(ascs_chan_id_0, ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
+    btp.ascs_configure_qos(ascs_chan_id, ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
 
     # Enable
-    btp.ascs_enable(ascs_chan_id_0, ase_id)
+    btp.ascs_enable(ascs_chan_id, ase_id)
     return True
 
 
@@ -252,13 +255,14 @@ def hdl_wid_305(params: WIDParams):
     # Please configure ASE state to Enabling for SOURCE ASE, Freq: 16KHz and Frame Duration: 10ms
 
     stack = get_stack()
-    ascs_client_0 = stack.le_audio.ascs_clients[0]
-    ascs_chan_id_0 = ascs_client_0['chan_id']
-    ase_id = get_ase_id_for_type(ascs_client_0, "SINK")
+    bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
+    ascs_client = stack.le_audio.ascs_get_info(bd_addr)
+    ascs_chan_id = ascs_client['chan_id']
+    ase_id = get_ase_id_for_type(ascs_client, "SINK")
 
     # Codec
     (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info('16_2')
-    btp.ascs_configure_codec(ascs_chan_id_0, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
+    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
 
     # CIG / QoS - SOURCE
     cig_id = 1
@@ -267,35 +271,36 @@ def hdl_wid_305(params: WIDParams):
     cis_params = [(cis_id, octets_per_frame, 0)]
     sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms = le_audio_qos_get_info('16_2_1')
     btp.cig_create(cig_id, sdu_interval_us, sdu_interval_us, framing, cis_params)
-    btp.ascs_configure_qos(ascs_chan_id_0, ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
+    btp.ascs_configure_qos(ascs_chan_id, ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
 
     # Enable
-    btp.ascs_enable(ascs_chan_id_0, ase_id)
+    btp.ascs_enable(ascs_chan_id, ase_id)
 
     # PTS 8.3 does not continue, let's assume we have to first enter streaming and then disable the stream
-    btp.ascs_receiver_start_ready(ascs_chan_id_0, ase_id)
-    btp.ascs_disable(ascs_chan_id_0, ase_id)
+    btp.ascs_receiver_start_ready(ascs_chan_id, ase_id)
+    btp.ascs_disable(ascs_chan_id, ase_id)
     return True
 
 
 def hdl_wid_306(params: WIDParams):
     # Please configure ASE state to Streaming for SINK/SOURCE ASE, Freq: 16KHz and Frame Duration: 10ms
     pattern = '.*(SINK|SOURCE) ASE.*'
-    params = re.match(pattern, params.description)
-    if not params:
+    desc_match = re.match(pattern, params.description)
+    if not desc_match:
         logging.error("parsing error")
         return False
 
-    ase_type = params.group(1)
+    ase_type = desc_match.group(1)
 
     stack = get_stack()
-    ascs_client_0 = stack.le_audio.ascs_clients[0]
-    ascs_chan_id_0 = ascs_client_0['chan_id']
-    ase_id = get_ase_id_for_type(ascs_client_0, ase_type)
+    bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
+    ascs_client = stack.le_audio.ascs_get_info(bd_addr)
+    ascs_chan_id = ascs_client['chan_id']
+    ase_id = get_ase_id_for_type(ascs_client, ase_type)
 
     # Codec
     (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info('16_2')
-    btp.ascs_configure_codec(ascs_chan_id_0, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
+    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
 
     # CIG / QoS - SOURCE
     cig_id = 1
@@ -307,47 +312,51 @@ def hdl_wid_306(params: WIDParams):
         cis_params = [(cis_id, octets_per_frame, 0)]
     sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms = le_audio_qos_get_info('16_2_1')
     btp.cig_create(cig_id, sdu_interval_us, sdu_interval_us, framing, cis_params)
-    btp.ascs_configure_qos(ascs_chan_id_0, ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
+    btp.ascs_configure_qos(ascs_chan_id, ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
 
     # Enable
-    btp.ascs_enable(ascs_chan_id_0, ase_id)
+    btp.ascs_enable(ascs_chan_id, ase_id)
 
     # CIS
-    btp.cis_create(cig_id)
+    cis_associations = [(cis_id, Addr.le_public, bd_addr)]
+    btp.cis_create(cig_id, cis_associations)
 
     # send receiver ready if we are sink
     if ase_type == 'SOURCE':
-        btp.ascs_receiver_start_ready(ascs_chan_id_0, ase_id)
+        btp.ascs_sreceiver_start_ready(ascs_chan_id, ase_id)
     return True
 
 
 def hdl_wid_307(params: WIDParams):
     # Please configure ASE state to Disabling state. If server is Source, please initiate Receiver Stop Ready
     stack = get_stack()
-    ascs_client_0 = stack.le_audio.ascs_clients[0]
-    ascs_chan_id_0 = ascs_client_0['chan_id']
-    ase_id = get_any_ase_id(ascs_client_0)
-    btp.ascs_disable(ascs_chan_id_0, ase_id)
+    bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
+    ascs_client = stack.le_audio.ascs_get_info(bd_addr)
+    ascs_chan_id = ascs_client['chan_id']
+    ase_id = get_any_ase_id(ascs_client)
+    btp.ascs_disable(ascs_chan_id, ase_id)
     return True
 
 
 def hdl_wid_309(params: WIDParams):
     # Please configure ASE state to Releasing state.
     stack = get_stack()
-    ascs_client_0 = stack.le_audio.ascs_clients[0]
-    ascs_chan_id_0 = ascs_client_0['chan_id']
-    ase_id = get_any_ase_id(ascs_client_0)
-    btp.ascs_release(ascs_chan_id_0, ase_id)
+    bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
+    ascs_client = stack.le_audio.ascs_get_info(bd_addr)
+    ascs_chan_id = ascs_client['chan_id']
+    ase_id = get_any_ase_id(ascs_client)
+    btp.ascs_release(ascs_chan_id, ase_id)
     return True
 
 
 def hdl_wid_310(params: WIDParams):
     # Please send Update Metadata Opcode with valid data.
     stack = get_stack()
-    ascs_client_0 = stack.le_audio.ascs_clients[0]
-    ascs_chan_id_0 = ascs_client_0['chan_id']
-    ase_id = get_any_ase_id(ascs_client_0)
-    btp.ascs_update_metadata(ascs_chan_id_0, ase_id)
+    bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
+    ascs_client = stack.le_audio.ascs_get_info(bd_addr)
+    ascs_chan_id = ascs_client['chan_id']
+    ase_id = get_any_ase_id(ascs_client)
+    btp.ascs_update_metadata(ascs_chan_id, ase_id)
     return True
 
 
@@ -355,38 +364,44 @@ def hdl_wid_311(params: WIDParams):
     # Please configure 1 SOURCE ASE with Config Setting: 8_1_1.\nAfter that, configure to streaming state.
     # Please configure 1 SINK ASE with Config Setting: IXIT.\nAfter that, configure to streaming state.
     pattern = ".*(SINK|SOURCE) ASE.*Config Setting: (\w+)\."
-    params = re.match(pattern, params.description)
-    if not params:
+    desc_match = re.match(pattern, params.description)
+    if not desc_match:
         logging.error("parsing error in description")
         return False
-    ase_type = params.group(1)
-    qos_string = params.group(2)
+    ase_type = desc_match.group(1)
+    qos_string = desc_match.group(2)
 
     if qos_string == "IXIT":
         codec = '16_2'
         qos = '16_2_1'
     else:
         pattern = '(\d+_\d+)_(\d)'
-        params = re.match(pattern, qos_string)
-        if not params:
+        desc_match = re.match(pattern, qos_string)
+        if not desc_match:
             logging.error("parsing error in " + qos_string)
             return False
-        codec = params.group(1)
-        qos = params.group(1) + '_' + params.group(2)
+        codec = desc_match.group(1)
+        qos = desc_match.group(1) + '_' + desc_match.group(2)
     log("ASE Codec %s, Setting %s, QoS Setting %s", ase_type, codec, qos)
 
     stack = get_stack()
-    ascs_client_0 = stack.le_audio.ascs_clients[0]
-    ascs_chan_id_0 = ascs_client_0['chan_id']
-    ase_id = get_ase_id_for_type(ascs_client_0, ase_type)
+    bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
+    ascs_client = stack.le_audio.ascs_get_info(bd_addr)
+    ascs_chan_id = ascs_client['chan_id']
+    ase_id = get_ase_id_for_type(ascs_client, ase_type)
 
     # Codec
     (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info(codec)
-    btp.ascs_configure_codec(ascs_chan_id_0, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
+    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
+
+    if params.test_case_name.endswith('LT2'):
+        cig_id = 2
+        cis_id = 2
+    else:
+        cig_id = 1
+        cis_id = 1
 
     # CIG / QoS - SOURCE
-    cig_id = 1
-    cis_id = 1
     framing = 0
     if ase_type == "SOURCE":
         cis_params = [(cis_id, 0, octets_per_frame)]
@@ -394,17 +409,19 @@ def hdl_wid_311(params: WIDParams):
         cis_params = [(cis_id, octets_per_frame, 0)]
     sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms = le_audio_qos_get_info(qos)
     btp.cig_create(cig_id, sdu_interval_us, sdu_interval_us, framing, cis_params)
-    btp.ascs_configure_qos(ascs_chan_id_0, ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
+
+    btp.ascs_configure_qos(ascs_chan_id, ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
 
     # Enable
-    btp.ascs_enable(ascs_chan_id_0, ase_id)
+    btp.ascs_enable(ascs_chan_id, ase_id)
 
     # CIS
-    btp.cis_create(cig_id)
+    cis_associations = [(cis_id, Addr.le_public, bd_addr)]
+    btp.cis_create(cig_id, cis_associations)
 
     # send receiver ready if we are sink
     if ase_type == 'SOURCE':
-        btp.ascs_receiver_start_ready(ascs_chan_id_0, ase_id)
+        btp.ascs_receiver_start_ready(ascs_chan_id, ase_id)
     return True
 
 
@@ -412,38 +429,39 @@ def hdl_wid_313(params: WIDParams):
     # Please configure 1 SINK and 1 SOURCE ASE with Config Setting: 16_2_1.\nAfter that, configure both ASEes to streaming state
     # Please configure 1 SINK and 1 SOURCE ASE with Config Setting: IXIT.\nAfter that, configure both ASEes to streaming state.
     pattern = ".*Config Setting: (\w+)\."
-    params = re.match(pattern, params.description)
-    if not params:
+    desc_match = re.match(pattern, params.description)
+    if not desc_match:
         logging.error("parsing error in description")
         return False
 
-    if params.group(1) == "IXIT":
+    if desc_match.group(1) == "IXIT":
         codec_name = '16_2'
         qos_name = '16_2_1'
     else:
-        qos_string = params.group(1)
+        qos_string = desc_match.group(1)
         pattern = '(\d+_\d+)_(\d)'
-        params = re.match(pattern, qos_string)
-        if not params:
+        desc_match = re.match(pattern, qos_string)
+        if not desc_match:
             logging.error("parsing error in " + qos_string)
             return False
-        codec_name = params.group(1)
-        qos_name = params.group(1) + '_' + params.group(2)
+        codec_name = desc_match.group(1)
+        qos_name = desc_match.group(1) + '_' + desc_match.group(2)
 
     codec_format = 6
     (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info(codec_name)
     log("ASE Codec %u, Setting %s, QoS Setting %s", codec_format, codec_name, qos_name)
 
     stack = get_stack()
-    ascs_client_0 = stack.le_audio.ascs_clients[0]
-    ascs_chan_id_0 = ascs_client_0['chan_id']
-    source_ase_id = get_source_ase_id(ascs_client_0)
-    sink_ase_id = get_sink_ase_id(ascs_client_0)
+    bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
+    ascs_client = stack.le_audio.ascs_get_info(bd_addr)
+    ascs_chan_id = ascs_client['chan_id']
+    source_ase_id = get_source_ase_id(ascs_client)
+    sink_ase_id = get_sink_ase_id(ascs_client)
 
     # Codec
     log("ASE codec %u, Frequency %u, frame duration %u, octets %u", codec_format, frequency_hz, frame_duration_us, octets_per_frame)
-    btp.ascs_configure_codec(ascs_chan_id_0, source_ase_id, codec_format, frequency_hz, frame_duration_us, octets_per_frame)
-    btp.ascs_configure_codec(ascs_chan_id_0, sink_ase_id, codec_format, frequency_hz, frame_duration_us, octets_per_frame)
+    btp.ascs_configure_codec(ascs_chan_id, source_ase_id, codec_format, frequency_hz, frame_duration_us, octets_per_frame)
+    btp.ascs_configure_codec(ascs_chan_id, sink_ase_id, codec_format, frequency_hz, frame_duration_us, octets_per_frame)
 
     # Get Audio Configuration from test spec
     audio_configuration = stack.le_audio.get_audio_configuration()
@@ -469,14 +487,14 @@ def hdl_wid_313(params: WIDParams):
     btp.cig_create(cig_id, sdu_interval_us, sdu_interval_us, framing, cis_params)
 
     # QoS
-    btp.ascs_configure_qos(ascs_chan_id_0, sink_ase_id, cig_id, sink_cis, sdu_interval_us, framing, max_sdu_size, retransmission_number,
+    btp.ascs_configure_qos(ascs_chan_id, sink_ase_id, cig_id, sink_cis, sdu_interval_us, framing, max_sdu_size, retransmission_number,
                            max_transport_latency_ms)
-    btp.ascs_configure_qos(ascs_chan_id_0, source_ase_id, cig_id,source_cis, sdu_interval_us, framing, max_sdu_size, retransmission_number,
+    btp.ascs_configure_qos(ascs_chan_id, source_ase_id, cig_id,source_cis, sdu_interval_us, framing, max_sdu_size, retransmission_number,
                            max_transport_latency_ms)
 
     # Enable
-    btp.ascs_enable(ascs_chan_id_0, source_ase_id)
-    btp.ascs_enable(ascs_chan_id_0, sink_ase_id)
+    btp.ascs_enable(ascs_chan_id, source_ase_id)
+    btp.ascs_enable(ascs_chan_id, sink_ase_id)
 
     # Create CIS
     btp.cis_create(cig_id)
@@ -489,30 +507,32 @@ def hdl_wid_313(params: WIDParams):
 def hdl_wid_314(params: WIDParams):
     # Please configure ASE state to CODEC configured with Vendor specific parameter in SOURCE/SINK ASE
     stack = get_stack()
-    ascs_client_0 = stack.le_audio.ascs_clients[0]
-    ascs_chan_id_0 = ascs_client_0['chan_id']
-    ase_id = get_any_ase_id(ascs_client_0)
-    btp.ascs_configure_codec(ascs_chan_id_0, ase_id, 0xff, 48000, 10000, 26)
+    bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
+    ascs_client = stack.le_audio.ascs_get_info(bd_addr)
+    ascs_chan_id = ascs_client['chan_id']
+    ase_id = get_any_ase_id(ascs_client)
+    btp.ascs_configure_codec(ascs_chan_id, ase_id, 0xff, 48000, 10000, 26)
     return True
 
 
 def hdl_wid_315(params: WIDParams):
     # Please configure ASE state to QoS Configured with Vendor specific parameter in SOURCE/SINK ASE.
     pattern = '.*(SINK|SOURCE) ASE.*'
-    params = re.match(pattern, params.description)
-    if not params:
+    desc_match = re.match(pattern, params.description)
+    if not desc_match:
         logging.error("parsing error")
         return False
 
-    ase_type = params.group(1)
+    ase_type = desc_match.group(1)
 
     stack = get_stack()
-    ascs_client_0 = stack.le_audio.ascs_clients[0]
-    ascs_chan_id_0 = ascs_client_0['chan_id']
-    ase_id = get_ase_id_for_type(ascs_client_0, ase_type)
+    bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
+    ascs_client = stack.le_audio.ascs_get_info(bd_addr)
+    ascs_chan_id = ascs_client['chan_id']
+    ase_id = get_ase_id_for_type(ascs_client, ase_type)
 
     # Codec
-    btp.ascs_configure_codec(ascs_chan_id_0, ase_id, 0xff, 48000, 10000, 26)
+    btp.ascs_configure_codec(ascs_chan_id, ase_id, 0xff, 48000, 10000, 26)
 
     # PTS TSPX_VS_QoS_*
     sdu_interval_us = 10000
@@ -533,7 +553,7 @@ def hdl_wid_315(params: WIDParams):
     else:
         cis_params = [(cis_id, octets_per_frame, 0)]
     btp.cig_create(cig_id, sdu_interval_us, sdu_interval_us, framing, cis_params)
-    btp.ascs_configure_qos(ascs_chan_id_0, ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
+    btp.ascs_configure_qos(ascs_chan_id, ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
     return True
 
 
@@ -552,8 +572,8 @@ def hdl_wid_20100(params: WIDParams):
 
 def hdl_wid_20106(params: WIDParams):
     # 'Please write to Client Characteristic Configuration Descriptor..'
+    bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
     stack = get_stack()
-    if not stack.le_audio.ascs_is_connected():
-        btp.ascs_connect()
-        stack.le_audio.ascs_connected()
+    if stack.le_audio.ascs_get_info(bd_addr) is None:
+        btp.ascs_connect(bd_addr, Addr.le_public)
     return True
