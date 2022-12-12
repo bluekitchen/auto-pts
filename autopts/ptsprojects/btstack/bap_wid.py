@@ -137,10 +137,10 @@ def get_ase_id_for_type(ascs_client, ase_type):
         return get_sink_ase_id(ascs_client)
 
 
-def le_audio_configure_lc3(ascs_chan_id, ase_id, codec):
+def le_audio_configure_lc3(ascs_chan_id, ase_id, codec, audio_locations):
     frequency_hz, frame_duration_us, octets_per_frame = le_audio_codec_get_info(codec)
     log("ASE Codec LC3 frequency %u hz, frame duration %u us, octets per frame %u", frequency_hz, frame_duration_us, octets_per_frame)
-    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
+    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, audio_locations, octets_per_frame)
 
 
 def le_audio_configure_qos(ascs_chan_id, codec, qos, audio_conffiguration, ):
@@ -182,7 +182,7 @@ def hdl_wid_302(params: WIDParams):
     ase_id = get_any_ase_id(ascs_client)
     codec = stack.le_audio.get_codec()
 
-    le_audio_configure_lc3(ascs_chan_id, ase_id, codec)
+    le_audio_configure_lc3(ascs_chan_id, ase_id, codec, 1)
     return True
 
 
@@ -212,7 +212,7 @@ def hdl_wid_303(params: WIDParams):
     # Codec
     frequency_hz, frame_duration_us, octets_per_frame = le_audio_codec_get_info(codec)
     log("ASE Codec LC3 frequency %u hz, frame duration %u us, octets per frame %u", frequency_hz, frame_duration_us, octets_per_frame)
-    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
+    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, 1, octets_per_frame)
 
     # CIG / QoS
     if ase_type == "SOURCE":
@@ -235,7 +235,7 @@ def hdl_wid_304(params: WIDParams):
 
     # Codec
     (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info('16_2')
-    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
+    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, 1, octets_per_frame)
 
     # CIG / QoS - SOURCE
     cig_id = 1
@@ -262,7 +262,7 @@ def hdl_wid_305(params: WIDParams):
 
     # Codec
     (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info('16_2')
-    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
+    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, 1, octets_per_frame)
 
     # CIG / QoS - SOURCE
     cig_id = 1
@@ -300,7 +300,7 @@ def hdl_wid_306(params: WIDParams):
 
     # Codec
     (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info('16_2')
-    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
+    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, 1, octets_per_frame)
 
     # CIG / QoS - SOURCE
     cig_id = 1
@@ -324,6 +324,8 @@ def hdl_wid_306(params: WIDParams):
     # send receiver ready if we are sink
     if ase_type == 'SOURCE':
         btp.ascs_sreceiver_start_ready(ascs_chan_id, ase_id)
+    else:
+        btp.cis_start_streaming(cig_id, cis_id)
     return True
 
 
@@ -363,13 +365,15 @@ def hdl_wid_310(params: WIDParams):
 def hdl_wid_311(params: WIDParams):
     # Please configure 1 SOURCE ASE with Config Setting: 8_1_1.\nAfter that, configure to streaming state.
     # Please configure 1 SINK ASE with Config Setting: IXIT.\nAfter that, configure to streaming state.
-    pattern = ".*(SINK|SOURCE) ASE.*Config Setting: (\w+)\."
+    # Please configure 2 SINK ASE with Config Setting: 16_2_1.\nAfter that, configure to streaming state.
+    pattern = ".*configure (\d) (SINK|SOURCE) ASE.*Config Setting: (\w+)\."
     desc_match = re.match(pattern, params.description)
     if not desc_match:
         logging.error("parsing error in description")
         return False
-    ase_type = desc_match.group(1)
-    qos_string = desc_match.group(2)
+    ase_count = int(desc_match.group(1))
+    ase_type = desc_match.group(2)
+    qos_string = desc_match.group(3)
 
     if qos_string == "IXIT":
         codec = '16_2'
@@ -388,40 +392,82 @@ def hdl_wid_311(params: WIDParams):
     bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
     ascs_client = stack.le_audio.ascs_get_info(bd_addr)
     ascs_chan_id = ascs_client['chan_id']
-    ase_id = get_ase_id_for_type(ascs_client, ase_type)
+
+    if ase_type == "SOURCE":
+        ase_ids = ascs_client['source_ases']
+    else:
+        ase_ids = ascs_client['sink_ases']
+
+    # Get Audio Configuration from test spec
+    audio_configuration = stack.le_audio.get_audio_configuration()
+    (num_servers, cis_entries) = audio_configurations[audio_configuration]
+    log("Audio Configuration %s -> num servers %u, cis entries %s", audio_configuration, num_servers, cis_entries)
 
     # Codec
-    (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info(codec)
-    btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, octets_per_frame)
+    audio_locations = 1
+    for (ase_id, cis_entry) in zip(ase_ids, cis_entries):
+        (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info(codec)
+        if ase_type == "SOURCE":
+            channels = cis_entry[0]
+        else:
+            channels = cis_entry[1]
+        if channels > 1:
+            audio_locations = 3
+        else:
+            audio_locations = 1
+        log("ASE %u, audio locations 0x%x", ase_id, audio_locations)
+        btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, audio_locations, octets_per_frame)
+        audio_locations = audio_locations << 1
 
+    # handle 2 LTs
     if params.test_case_name.endswith('LT2'):
-        cig_id = 2
-        cis_id = 2
+        base_cig_id = 2
     else:
-        cig_id = 1
-        cis_id = 1
+        base_cig_id = 1
 
     # CIG / QoS - SOURCE
-    framing = 0
-    if ase_type == "SOURCE":
-        cis_params = [(cis_id, 0, octets_per_frame)]
-    else:
-        cis_params = [(cis_id, octets_per_frame, 0)]
+    cig_id = base_cig_id
+    cis_id = 1
+    cis_params = []
+    for ase_id in ase_ids:
+        framing = 0
+        if ase_type == "SOURCE":
+            cis_params.append((cis_id, 0, octets_per_frame))
+        else:
+            cis_params.append((cis_id, octets_per_frame, 0))
+        cis_id += 1
     sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms = le_audio_qos_get_info(qos)
     btp.cig_create(cig_id, sdu_interval_us, sdu_interval_us, framing, cis_params)
 
-    btp.ascs_configure_qos(ascs_chan_id, ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
+    cis_id = 1
+    for ase_id in ase_ids:
+        btp.ascs_configure_qos(ascs_chan_id, ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
+        cis_id += 1
 
     # Enable
-    btp.ascs_enable(ascs_chan_id, ase_id)
+    for ase_id in ase_ids:
+        btp.ascs_enable(ascs_chan_id, ase_id)
 
     # CIS
-    cis_associations = [(cis_id, Addr.le_public, bd_addr)]
+    cis_id = 1
+    cis_associations = []
+    for ase_id in ase_ids:
+        cis_associations.append((cis_id, Addr.le_public, bd_addr))
+        cis_id += 1
     btp.cis_create(cig_id, cis_associations)
 
-    # send receiver ready if we are sink
-    if ase_type == 'SOURCE':
-        btp.ascs_receiver_start_ready(ascs_chan_id, ase_id)
+    # "Wait" for ASE State STREAMING
+    sleep(1)
+
+    cis_id = 1
+    for ase_id in ase_ids:
+        if ase_type == 'SOURCE':
+            # send receiver ready if we are sink
+            btp.ascs_receiver_start_ready(ascs_chan_id, ase_id)
+        else:
+            btp.cis_start_streaming(cig_id, cis_id)
+            cis_id += 1
+
     return True
 
 
@@ -460,8 +506,8 @@ def hdl_wid_313(params: WIDParams):
 
     # Codec
     log("ASE codec %u, Frequency %u, frame duration %u, octets %u", codec_format, frequency_hz, frame_duration_us, octets_per_frame)
-    btp.ascs_configure_codec(ascs_chan_id, source_ase_id, codec_format, frequency_hz, frame_duration_us, octets_per_frame)
-    btp.ascs_configure_codec(ascs_chan_id, sink_ase_id, codec_format, frequency_hz, frame_duration_us, octets_per_frame)
+    btp.ascs_configure_codec(ascs_chan_id, source_ase_id, codec_format, frequency_hz, frame_duration_us, 1, octets_per_frame)
+    btp.ascs_configure_codec(ascs_chan_id, sink_ase_id, codec_format, frequency_hz, frame_duration_us, 1, octets_per_frame)
 
     # Get Audio Configuration from test spec
     audio_configuration = stack.le_audio.get_audio_configuration()
@@ -511,7 +557,7 @@ def hdl_wid_314(params: WIDParams):
     ascs_client = stack.le_audio.ascs_get_info(bd_addr)
     ascs_chan_id = ascs_client['chan_id']
     ase_id = get_any_ase_id(ascs_client)
-    btp.ascs_configure_codec(ascs_chan_id, ase_id, 0xff, 48000, 10000, 26)
+    btp.ascs_configure_codec(ascs_chan_id, ase_id, 0xff, 48000, 10000, 1, 26)
     return True
 
 
@@ -532,7 +578,7 @@ def hdl_wid_315(params: WIDParams):
     ase_id = get_ase_id_for_type(ascs_client, ase_type)
 
     # Codec
-    btp.ascs_configure_codec(ascs_chan_id, ase_id, 0xff, 48000, 10000, 26)
+    btp.ascs_configure_codec(ascs_chan_id, ase_id, 0xff, 48000, 10000, 1, 26)
 
     # PTS TSPX_VS_QoS_*
     sdu_interval_us = 10000
