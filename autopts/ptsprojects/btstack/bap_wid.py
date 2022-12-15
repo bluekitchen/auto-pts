@@ -403,6 +403,14 @@ def hdl_wid_311(params: WIDParams):
     (num_servers, cis_entries) = audio_configurations[audio_configuration]
     log("Audio Configuration %s -> num servers %u, cis entries %s", audio_configuration, num_servers, cis_entries)
 
+    # map CIS entries onto available servers
+    if num_servers == 2:
+        if params.test_case_name.endswith('LT2'):
+            cis_entries = cis_entries[1:2]
+        else:
+            cis_entries = cis_entries[0:1]
+        log("Use CIS entry: %r", cis_entries[0])
+
     # Codec
     audio_locations = 1
     for (ase_id, cis_entry) in zip(ase_ids, cis_entries):
@@ -419,14 +427,14 @@ def hdl_wid_311(params: WIDParams):
         btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, audio_locations, octets_per_frame)
         audio_locations = audio_locations << 1
 
-    # handle 2 LTs
+    # Use on CIG per LTs
     if params.test_case_name.endswith('LT2'):
-        base_cig_id = 2
+        cig_id = 2
     else:
-        base_cig_id = 1
+        cig_id = 1
+    log("LT%u2 -> CIG ID %u", cig_id, cig_id)
 
     # CIG / QoS - SOURCE
-    cig_id = base_cig_id
     cis_id = 1
     cis_params = []
     for ase_id in ase_ids:
@@ -474,6 +482,7 @@ def hdl_wid_311(params: WIDParams):
 def hdl_wid_313(params: WIDParams):
     # Please configure 1 SINK and 1 SOURCE ASE with Config Setting: 16_2_1.\nAfter that, configure both ASEes to streaming state
     # Please configure 1 SINK and 1 SOURCE ASE with Config Setting: IXIT.\nAfter that, configure both ASEes to streaming state.
+    # Please configure 2 SINK and 1 SOURCE ASE with Config Setting: 16_2_1.\nAfter that, configure both ASEes to streaming state.
     pattern = ".*Config Setting: (\w+)\."
     desc_match = re.match(pattern, params.description)
     if not desc_match:
@@ -501,31 +510,50 @@ def hdl_wid_313(params: WIDParams):
     bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
     ascs_client = stack.le_audio.ascs_get_info(bd_addr)
     ascs_chan_id = ascs_client['chan_id']
-    source_ase_id = get_source_ase_id(ascs_client)
-    sink_ase_id = get_sink_ase_id(ascs_client)
-
-    # Codec
-    log("ASE codec %u, Frequency %u, frame duration %u, octets %u", codec_format, frequency_hz, frame_duration_us, octets_per_frame)
-    btp.ascs_configure_codec(ascs_chan_id, source_ase_id, codec_format, frequency_hz, frame_duration_us, 1, octets_per_frame)
-    btp.ascs_configure_codec(ascs_chan_id, sink_ase_id, codec_format, frequency_hz, frame_duration_us, 1, octets_per_frame)
+    source_ase_ids = ascs_client['source_ases']
+    sink_ase_ids = ascs_client['sink_ases']
 
     # Get Audio Configuration from test spec
     audio_configuration = stack.le_audio.get_audio_configuration()
     (num_servers, cis_entries) = audio_configurations[audio_configuration]
     log("Audio Configuration %s -> num servers %u, cis entries %s", audio_configuration, num_servers, cis_entries)
 
+    # map CIS entries onto available servers
+    if num_servers == 2:
+        if params.test_case_name.endswith('LT2'):
+            cis_entries = cis_entries[1:2]
+        else:
+            cis_entries = cis_entries[0:1]
+        log("Use CIS entry: %r", cis_entries[0])
+
+    # Codec
+    for source_ase_id in source_ase_ids:
+        log("ASE SOURCE %u: codec %u, Frequency %u, frame duration %u, octets %u", source_ase_id, codec_format, frequency_hz,
+            frame_duration_us, octets_per_frame)
+        btp.ascs_configure_codec(ascs_chan_id, source_ase_id, codec_format, frequency_hz, frame_duration_us, 1, octets_per_frame)
+    for sink_ase_id in sink_ase_ids:
+        log("ASE SINK %u: codec %u, Frequency %u, frame duration %u, octets %u", sink_ase_id, codec_format, frequency_hz,
+            frame_duration_us, octets_per_frame)
+        btp.ascs_configure_codec(ascs_chan_id, sink_ase_id, codec_format, frequency_hz, frame_duration_us, 1, octets_per_frame)
+
+    # Use on CIG per LTs
+    if params.test_case_name.endswith('LT2'):
+        cig_id = 2
+    else:
+        cig_id = 1
+    log("LT%u -> CIG ID %u", cig_id, cig_id)
+
     # Determine CIS Params based on Audio Configuration and map ase to cis
     cis_params = []
-    cig_id = 1
     cis_id = 1
-    sink_cis = 0
-    source_cis = 0
+    sink_cis_ids = []
+    source_cis_ids = []
     for cis_entry in cis_entries:
         cis_params.append((cis_id, octets_per_frame * cis_entry[1], octets_per_frame * cis_entry[0]))
-        if sink_cis == 0 and cis_entry[1] > 0:
-            sink_cis = cis_id
-        if source_cis == 0 and cis_entry[0] > 0:
-            source_cis = cis_id
+        if cis_entry[1] > 0:
+            sink_cis_ids.append(cis_id)
+        if cis_entry[0] > 0:
+            source_cis_ids.append(cis_id)
         cis_id += 1
 
     # CIG
@@ -533,20 +561,36 @@ def hdl_wid_313(params: WIDParams):
     btp.cig_create(cig_id, sdu_interval_us, sdu_interval_us, framing, cis_params)
 
     # QoS
-    btp.ascs_configure_qos(ascs_chan_id, sink_ase_id, cig_id, sink_cis, sdu_interval_us, framing, max_sdu_size, retransmission_number,
-                           max_transport_latency_ms)
-    btp.ascs_configure_qos(ascs_chan_id, source_ase_id, cig_id,source_cis, sdu_interval_us, framing, max_sdu_size, retransmission_number,
-                           max_transport_latency_ms)
+    for (source_ase_id, source_cis) in zip(source_ase_ids, source_cis_ids):
+        log("ASE SOURCE %u uses CIS %u", source_ase_id, source_cis)
+        btp.ascs_configure_qos(ascs_chan_id, source_ase_id, cig_id, source_cis, sdu_interval_us, framing, max_sdu_size,
+                               retransmission_number, max_transport_latency_ms)
+    for (sink_ase_id, sink_cis) in zip(sink_ase_ids, sink_cis_ids):
+        log("ASE SINK %u uses CIS %u", source_ase_id, source_cis)
+        btp.ascs_configure_qos(ascs_chan_id, sink_ase_id, cig_id, sink_cis, sdu_interval_us, framing, max_sdu_size,
+                               retransmission_number, max_transport_latency_ms)
 
     # Enable
-    btp.ascs_enable(ascs_chan_id, source_ase_id)
-    btp.ascs_enable(ascs_chan_id, sink_ase_id)
+    for source_ase_id in source_ase_ids:
+        btp.ascs_enable(ascs_chan_id, source_ase_id)
+    for sink_ase_id in sink_ase_ids:
+        btp.ascs_enable(ascs_chan_id, sink_ase_id)
 
-    # Create CIS
-    btp.cis_create(cig_id)
+    # CIS
+    cis_id = 1
+    cis_associations = []
+    for cis_entry in cis_entries:
+        cis_associations.append((cis_id, Addr.le_public, bd_addr))
+        cis_id += 1
+    btp.cis_create(cig_id, cis_associations)
 
-    # Receiver Ready
-    btp.ascs_receiver_start_ready(sink_ase_id, source_ase_id)
+    for source_ase_id in source_ase_ids:
+        # send receiver ready if we are sink
+        btp.ascs_receiver_start_ready(ascs_chan_id, source_ase_id)
+    for sink_cis_id in sink_cis_ids:
+        # start streaming if we are source
+        btp.cis_start_streaming(cig_id, sink_cis_id)
+
     return True
 
 

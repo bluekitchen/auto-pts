@@ -174,7 +174,7 @@ def cig_create(cig_id, sdu_interval_c_to_p_us, sdu_interval_p_to_c_us, framing, 
     iutctl = get_iut()
 
     cis_count = len(cis_params)
-    logging.debug("CIG: %u cis, sdu interval %u us, framing %u, cis_params %r", cis_count, sdu_interval_c_to_p_us, framing, cis_params)
+    logging.debug("CIG Create, id %u, num cis %u, sdu interval %u us, framing %u, cis_params %r", cig_id, cis_count, sdu_interval_c_to_p_us, framing, cis_params)
     data_ba = pack('<BBHHB', cig_id, cis_count, sdu_interval_c_to_p_us, sdu_interval_p_to_c_us, framing)
     for (cis_id, max_sdu_c_to_p, max_sdu_p_to_c) in cis_params:
         data_ba = data_ba + pack('<BHH', cis_id, max_sdu_c_to_p, max_sdu_p_to_c)
