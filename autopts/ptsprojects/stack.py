@@ -1185,7 +1185,7 @@ class Stack:
 
     # helper to call from test case
     def le_audio_set_codec(self, codec):
-        self.le_audio_set_codec(codec)
+        self.le_audio.set_codec(codec)
 
     def le_audio_set_audio_configuration(self, audio_configuration):
         self.le_audio.set_audio_configuration(audio_configuration)
