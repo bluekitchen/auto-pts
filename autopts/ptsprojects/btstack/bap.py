@@ -110,10 +110,10 @@ def test_cases(ptses):
         ("BAP/UCL/SCC/BV-031-C", "48_5"),
         ("BAP/UCL/SCC/BV-032-C", "48_6"),
     ]
-    for (test_case, audio_configuration) in test_codec_configurations:
+    for (test_case, codec) in test_codec_configurations:
         custom_test_cases.append(
             ZTestCase("BAP", test_case,
-                      cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
+                      cmds=pre_conditions + [TestFunc(stack.le_audio_set_codec, codec)],
                       generic_wid_hdl=bap_wid_hdl),
         )
 
