@@ -139,7 +139,7 @@ def get_ase_id_for_type(ascs_client, ase_type):
 
 def le_audio_configure_lc3(ascs_chan_id, ase_id, codec, audio_locations):
     frequency_hz, frame_duration_us, octets_per_frame = le_audio_codec_get_info(codec)
-    log("ASE Codec LC3 frequency %u hz, frame duration %u us, octets per frame %u", frequency_hz, frame_duration_us, octets_per_frame)
+    log("ASE Codec LC3 %s: frequency %u hz, frame duration %u us, octets per frame %u", codec, frequency_hz, frame_duration_us, octets_per_frame)
     btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, audio_locations, octets_per_frame)
 
 
@@ -173,13 +173,19 @@ def bap_wid_hdl(wid, description, test_case_name):
 
 def hdl_wid_302(params: WIDParams):
     # Please configure ASE state to CODEC configured with ? ASE, Freq: ? KHz, Frame Duration: ? ms
-    # we use codec info from test specification as octets per frame is not providd by PTS
+    # we use codec info from test specification as octets per frame is not provided by PTS
+    pattern = '.*with (SINK|SOURCE) ASE.*'
+    desc_match = re.match(pattern, params.description)
+    if not desc_match:
+        logging.error("parsing error")
+        return False
+    ase_type = desc_match.group(1)
 
     stack = get_stack()
     bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
     ascs_client = stack.le_audio.ascs_get_info(bd_addr)
     ascs_chan_id = ascs_client['chan_id']
-    ase_id = get_any_ase_id(ascs_client)
+    ase_id = get_ase_id_for_type(ascs_client, ase_type)
     codec = stack.le_audio.get_codec()
 
     le_audio_configure_lc3(ascs_chan_id, ase_id, codec, 1)
