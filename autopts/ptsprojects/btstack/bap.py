@@ -57,6 +57,7 @@ def test_cases(ptses):
 
     btp.set_pts_addr(pts_lt1_bd_addr, Addr.le_public)
 
+    # Preconditions for Lower Tester 1
     pre_conditions = [
         TestFunc(stack.le_audio_init),
         TestFunc(btp.core_reg_svc_gap),
@@ -73,8 +74,10 @@ def test_cases(ptses):
     ]
 
     custom_test_cases = []
+    test_cases_lt2 = []
+    test_cases_slaves = []
 
-    # provide codec configuration for BAP/UCL/SCC/BV-001-C - BAP/UCL/SCC/BV-032-C
+    # Codec configuration for BAP/UCL/SCC/BV-001-C - BAP/UCL/SCC/BV-032-C
     # PTS 8.3 shows frequency and frame duration, but not octets per frame
     test_codec_configurations = [
         ("BAP/UCL/SCC/BV-001-C", "8_1"),
@@ -126,164 +129,65 @@ def test_cases(ptses):
         ("BAP/UCL/STR/BV-142-C", "AC 3"),
         ("BAP/UCL/STR/BV-143-C", "AC 5"),
         ("BAP/UCL/STR/BV-144-C", "AC 7(i)"),
+        ("BAP/UCL/STR/BV-235-C", "AC 6(i)"),
         ("BAP/UCL/STR/BV-267-C", "AC 6(i)"),
+        ("BAP/UCL/STR/BV-300-C", "AC 6(ii)"),
         ("BAP/UCL/STR/BV-333-C", "AC 9(i)"),
+        ("BAP/UCL/STR/BV-365-C", "AC 9(ii)"),
         ("BAP/UCL/STR/BV-397-C", "AC 8(i)"),
+        ("BAP/UCL/STR/BV-429-C", "AC 8(ii)"),
         ("BAP/UCL/STR/BV-461-C", "AC 11(i)"),
+        ("BAP/UCL/STR/BV-493-C", "AC 11(ii)"),
+        ("BAP/UCL/STR/BV-522-C", "AC 11(ii)"),
         ("BAP/UCL/STR/BV-523-C", "AC 3"),
         ("BAP/UCL/STR/BV-524-C", "AC 5"),
         ("BAP/UCL/STR/BV-525-C", "AC 7(i)"),
-        ("BAP/UCL/STR/BV-527-C", "AC 6(i)"),
+        ("BAP/UCL/STR/BV-526-C", "AC 7(ii)"),
+        ("BAP/UCL/STR/BV-528-C", "AC 6(ii)"),
         ("BAP/UCL/STR/BV-529-C", "AC 9(i)"),
+        ("BAP/UCL/STR/BV-530-C", "AC 9(ii)"),
         ("BAP/UCL/STR/BV-531-C", "AC 8(i)"),
+        ("BAP/UCL/STR/BV-532-C", "AC 8(ii)"),
         ("BAP/UCL/STR/BV-533-C", "AC 11(i)"),
+        ("BAP/UCL/STR/BV-534-C", "AC 11(ii)"),
     ]
+
+    # UCL/STR/BV-001 - 128
+    for i in range(1,32, 2):
+        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % i,        "AC 1"))
+        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % (i + 64), "AC 1"))
+    for i in range(2,33, 2):
+        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % i,        "AC 4"))
+        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % (i + 64), "AC 4"))
+    for i in range(33,64, 2):
+        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % i,        "AC 2"))
+        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % (i + 64), "AC 2"))
+    for i in range(34,65, 2):
+        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % i,        "AC 10"))
+        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % (i + 64), "AC 10"))
+
     for (test_case, audio_configuration) in test_audio_configurations:
-        custom_test_cases.append(
-            ZTestCase("BAP", test_case,
-                      cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
-                      generic_wid_hdl=bap_wid_hdl),
-        )
-
-    # UCL/STR/BV-001 - 32
-    for i in range(1, 33):
-        if i % 2 == 1:
-            audio_configuration = "AC 2"
+        if test_case.endswith('(ii)'):
+            lt2_name = test_case + '_LT2'
+            test_cases_lt2.append(
+                ZTestCase("BAP", test_case,
+                    cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
+                    generic_wid_hdl=bap_wid_hdl,
+                    lt2=lt2_name))
+            test_cases_slaves.append(
+                ZTestCaseSlave("BAP", lt2_name,
+                    cmds=pre_conditions_lt2 + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
+                    generic_wid_hdl=bap_wid_hdl)
+                )
         else:
-            audio_configuration = "AC 10"
-        test_case = 'BAP/UCL/STR/BV-%03u-C' % i
-        custom_test_cases.append(
-            ZTestCase("BAP", test_case,
+            custom_test_cases.append(
+                ZTestCase("BAP", test_case,
                       cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
-                      generic_wid_hdl=bap_wid_hdl),
-        )
+                      generic_wid_hdl=bap_wid_hdl))
 
-    # UCL/STR/BV-03 - 64
-    for i in range(33, 65):
-        if i % 2 == 1:
-            audio_configuration = "AC 1"
-        else:
-            audio_configuration = "AC 4"
-        test_case = 'BAP/UCL/STR/BV-%03u-C' % i
-        custom_test_cases.append(
-            ZTestCase("BAP", test_case,
-                      cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
-                      generic_wid_hdl=bap_wid_hdl),
-        )
-
-    # UCL/STR/BV-001 - 32
-    for i in range(65, 97):
-        if i % 2 == 1:
-            audio_configuration = "AC 2"
-        else:
-            audio_configuration = "AC 10"
-        test_case = 'BAP/UCL/STR/BV-%03u-C' % i
-        custom_test_cases.append(
-            ZTestCase("BAP", test_case,
-                      cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
-                      generic_wid_hdl=bap_wid_hdl),
-        )
-
-    # UCL/STR/BV-001 - 32
-    for i in range(97, 133):
-        if i % 2 == 1:
-            audio_configuration = "AC 1"
-        else:
-            audio_configuration = "AC 4"
-        test_case = 'BAP/UCL/STR/BV-%03u-C' % i
-        custom_test_cases.append(
-            ZTestCase("BAP", test_case,
-                      cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
-                      generic_wid_hdl=bap_wid_hdl),
-        )
 
     test_case_name_list = pts_lt1.get_test_case_list('BAP')
     tc_list = []
-
-    # Test Cases that requires LT2
-    test_cases_lt2 = [
-        ZTestCase("BAP", "BAP/UCL/STR/BV-235-C",
-                    cmds=pre_conditions,
-                    generic_wid_hdl=bap_wid_hdl,
-                    lt2="BAP/UCL/STR/BV-235-C_LT2"),
-        ZTestCase("BAP", "BAP/UCL/STR/BV-300-C",
-                    cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, "AC 6(ii)")],
-                    generic_wid_hdl=bap_wid_hdl,
-                    lt2="BAP/UCL/STR/BV-300-C_LT2"),
-        ZTestCase("BAP", "BAP/UCL/STR/BV-365-C",
-                    cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, "AC 9(ii)")],
-                    generic_wid_hdl=bap_wid_hdl,
-                    lt2="BAP/UCL/STR/BV-365-C_LT2"),
-        ZTestCase("BAP", "BAP/UCL/STR/BV-429-C",
-                    cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, "AC 8(ii)")],
-                    generic_wid_hdl=bap_wid_hdl,
-                    lt2="BAP/UCL/STR/BV-429-C_LT2"),
-        ZTestCase("BAP", "BAP/UCL/STR/BV-493-C",
-                    cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, "AC 11(ii)")],
-                    generic_wid_hdl=bap_wid_hdl,
-                    lt2="BAP/UCL/STR/BV-493-C_LT2"),
-        ZTestCase("BAP", "BAP/UCL/STR/BV-522-C",
-                    cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, "AC 11(ii)")],
-                    generic_wid_hdl=bap_wid_hdl,
-                    lt2="BAP/UCL/STR/BV-522-C_LT2"),
-        ZTestCase("BAP", "BAP/UCL/STR/BV-526-C",
-                  cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, "AC 7(ii)")],
-                  generic_wid_hdl=bap_wid_hdl,
-                  lt2="BAP/UCL/STR/BV-526-C_LT2"),
-        ZTestCase("BAP", "BAP/UCL/STR/BV-528-C",
-                  cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, "AC 6(ii)")],
-                  generic_wid_hdl=bap_wid_hdl,
-                  lt2="BAP/UCL/STR/BV-528-C_LT2"),
-        ZTestCase("BAP", "BAP/UCL/STR/BV-530-C",
-                  cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, "AC 9(ii)")],
-                  generic_wid_hdl=bap_wid_hdl,
-                  lt2="BAP/UCL/STR/BV-530-C_LT2"),
-        ZTestCase("BAP", "BAP/UCL/STR/BV-532-C",
-                  cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, "AC 8(ii)")],
-                  generic_wid_hdl=bap_wid_hdl,
-                  lt2="BAP/UCL/STR/BV-532-C_LT2"),
-        ZTestCase("BAP", "BAP/UCL/STR/BV-534-C",
-                  cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, "AC 11(ii)")],
-                  generic_wid_hdl=bap_wid_hdl,
-                  lt2="BAP/UCL/STR/BV-534-C_LT2"),
-    ]
-
-    # Test Cases for LT2
-    test_cases_slaves = [
-        ZTestCaseSlave("BAP", "BAP/UCL/STR/BV-235-C_LT2",
-                       cmds=pre_conditions_lt2,
-                       generic_wid_hdl=bap_wid_hdl),
-        ZTestCaseSlave("BAP", "BAP/UCL/STR/BV-300-C_LT2",
-                       cmds=pre_conditions_lt2 + [TestFunc(stack.le_audio_set_audio_configuration, "AC 6(ii)")],
-                       generic_wid_hdl=bap_wid_hdl),
-        ZTestCaseSlave("BAP", "BAP/UCL/STR/BV-365-C_LT2",
-                       cmds=pre_conditions_lt2 + [TestFunc(stack.le_audio_set_audio_configuration, "AC 9(ii)")],
-                       generic_wid_hdl=bap_wid_hdl),
-        ZTestCaseSlave("BAP", "BAP/UCL/STR/BV-429-C_LT2",
-                       cmds=pre_conditions_lt2 + [TestFunc(stack.le_audio_set_audio_configuration, "AC 8(ii)")],
-                       generic_wid_hdl=bap_wid_hdl),
-        ZTestCaseSlave("BAP", "BAP/UCL/STR/BV-493-C_LT2",
-                       cmds=pre_conditions_lt2 + [TestFunc(stack.le_audio_set_audio_configuration, "AC 11(ii)")],
-                       generic_wid_hdl=bap_wid_hdl),
-        ZTestCaseSlave("BAP", "BAP/UCL/STR/BV-522-C_LT2",
-                       cmds=pre_conditions_lt2 + [TestFunc(stack.le_audio_set_audio_configuration, "AC 11(ii)")],
-                       generic_wid_hdl=bap_wid_hdl),
-        ZTestCaseSlave("BAP", "BAP/UCL/STR/BV-526-C_LT2",
-                       cmds=pre_conditions_lt2 + [TestFunc(stack.le_audio_set_audio_configuration, "AC 7(ii)")],
-                       generic_wid_hdl=bap_wid_hdl),
-        ZTestCaseSlave("BAP", "BAP/UCL/STR/BV-528-C_LT2",
-                       cmds=pre_conditions_lt2 + [TestFunc(stack.le_audio_set_audio_configuration, "AC 6(ii)")],
-                       generic_wid_hdl=bap_wid_hdl),
-        ZTestCaseSlave("BAP", "BAP/UCL/STR/BV-530-C_LT2",
-                       cmds=pre_conditions_lt2 + [TestFunc(stack.le_audio_set_audio_configuration, "AC 9(ii)")],
-                       generic_wid_hdl=bap_wid_hdl),
-        ZTestCaseSlave("BAP", "BAP/UCL/STR/BV-532-C_LT2",
-                       cmds=pre_conditions_lt2 + [TestFunc(stack.le_audio_set_audio_configuration, "AC 8(ii)")],
-                       generic_wid_hdl=bap_wid_hdl),
-        ZTestCaseSlave("BAP", "BAP/UCL/STR/BV-534-C_LT2",
-                       cmds=pre_conditions_lt2 + [TestFunc(stack.le_audio_set_audio_configuration, "AC 11(ii)")],
-                       generic_wid_hdl=bap_wid_hdl),
-    ]
 
     for tc_name in test_case_name_list:
         # setup generic test case with pre_condition and bap wid hdl()

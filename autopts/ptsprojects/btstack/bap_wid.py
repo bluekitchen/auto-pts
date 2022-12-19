@@ -122,19 +122,11 @@ def get_any_ase_id(ascs_client):
         return source_ases[0]
 
 
-def get_source_ase_id(ascs_client):
-    return ascs_client['source_ases'][0]
-
-
-def get_sink_ase_id(ascs_client):
-    return ascs_client['sink_ases'][0]
-
-
 def get_ase_id_for_type(ascs_client, ase_type):
     if ase_type == "SOURCE":
-        return get_source_ase_id(ascs_client)
+        return ascs_client['source_ases'][0]
     else:
-        return get_sink_ase_id(ascs_client)
+        return ascs_client['sink_ases'][0]
 
 
 def le_audio_configure_lc3(ascs_chan_id, ase_id, codec, audio_locations):
@@ -233,11 +225,21 @@ def hdl_wid_303(params: WIDParams):
 
 def hdl_wid_304(params: WIDParams):
     # Please configure ASE state to Enabling for SOURCE ASE, Freq: 16KHz and Frame Duration: 10ms
+    pattern = '.*(SINK|SOURCE) ASE.*'
+    desc_match = re.match(pattern, params.description)
+    if not desc_match:
+        logging.error("parsing error")
+        return False
+
+    ase_type = desc_match.group(1)
+
     stack = get_stack()
     bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
     ascs_client = stack.le_audio.ascs_get_info(bd_addr)
     ascs_chan_id = ascs_client['chan_id']
-    ase_id = get_ase_id_for_type(ascs_client, "SOURCE")
+    ase_id = get_ase_id_for_type(ascs_client, ase_type)
+
+    log("Configure %s ASE - ID %u to ENABLING", ase_type, ase_id)
 
     # Codec
     (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info('16_2')
@@ -254,17 +256,39 @@ def hdl_wid_304(params: WIDParams):
 
     # Enable
     btp.ascs_enable(ascs_chan_id, ase_id)
+
+    # CIS
+    cis_associations = [(cis_id, Addr.le_public, bd_addr)]
+    btp.cis_create(cig_id, cis_associations)
+
+    # send receiver ready if we are sink
+    if ase_type == 'SOURCE':
+        btp.ascs_receiver_start_ready(ascs_chan_id, ase_id)
+    else:
+        btp.cis_start_streaming(cig_id, cis_id)
+
+    # Store reference for later, e.g. wdl 307
+    ascs_client['ase_id'] = ase_id
+    ascs_client['ase_type'] = ase_type
+
     return True
 
 
 def hdl_wid_305(params: WIDParams):
     # Please configure ASE state to Enabling for SOURCE ASE, Freq: 16KHz and Frame Duration: 10ms
+    pattern = '.*(SINK|SOURCE) ASE.*'
+    desc_match = re.match(pattern, params.description)
+    if not desc_match:
+        logging.error("parsing error")
+        return False
+
+    ase_type = desc_match.group(1)
 
     stack = get_stack()
     bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
     ascs_client = stack.le_audio.ascs_get_info(bd_addr)
     ascs_chan_id = ascs_client['chan_id']
-    ase_id = get_ase_id_for_type(ascs_client, "SINK")
+    ase_id = get_ase_id_for_type(ascs_client, ase_type)
 
     # Codec
     (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info('16_2')
@@ -284,7 +308,12 @@ def hdl_wid_305(params: WIDParams):
 
     # PTS 8.3 does not continue, let's assume we have to first enter streaming and then disable the stream
     btp.ascs_receiver_start_ready(ascs_chan_id, ase_id)
-    btp.ascs_disable(ascs_chan_id, ase_id)
+
+    # ???
+    # btp.ascs_disable(ascs_chan_id, ase_id)
+
+    # BAP/UCL/SCC/BV-113
+    btp.ascs_release(ascs_chan_id, ase_id)
     return True
 
 
@@ -329,9 +358,14 @@ def hdl_wid_306(params: WIDParams):
 
     # send receiver ready if we are sink
     if ase_type == 'SOURCE':
-        btp.ascs_sreceiver_start_ready(ascs_chan_id, ase_id)
+        btp.ascs_receiver_start_ready(ascs_chan_id, ase_id)
     else:
         btp.cis_start_streaming(cig_id, cis_id)
+
+    # Store reference for later, e.g. wdl 307
+    ascs_client['ase_id'] = ase_id
+    ascs_client['ase_type'] = ase_type
+
     return True
 
 
@@ -341,8 +375,17 @@ def hdl_wid_307(params: WIDParams):
     bd_addr = get_bd_addr_for_test_case_name(params.test_case_name)
     ascs_client = stack.le_audio.ascs_get_info(bd_addr)
     ascs_chan_id = ascs_client['chan_id']
-    ase_id = get_any_ase_id(ascs_client)
+    # get stored ase id, e.g. from wid 304
+    ase_id = ascs_client['ase_id']
+    ase_type = ascs_client['ase_type']
+
+    log("Configure ASE %u to DISABLING", ase_id)
     btp.ascs_disable(ascs_chan_id, ase_id)
+
+    if ase_type == 'SOURCE':
+        log("Receiver Stop Ready ASE %u", ase_id)
+        btp.ascs_receiver_stop_ready(ascs_chan_id, ase_id)
+
     return True
 
 
