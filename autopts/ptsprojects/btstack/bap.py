@@ -143,6 +143,7 @@ def test_cases(ptses):
         ("BAP/UCL/STR/BV-524-C", "AC 5"),
         ("BAP/UCL/STR/BV-525-C", "AC 7(i)"),
         ("BAP/UCL/STR/BV-526-C", "AC 7(ii)"),
+        ("BAP/UCL/STR/BV-527-C", "AC 6(i)"),
         ("BAP/UCL/STR/BV-528-C", "AC 6(ii)"),
         ("BAP/UCL/STR/BV-529-C", "AC 9(i)"),
         ("BAP/UCL/STR/BV-530-C", "AC 9(ii)"),
@@ -150,6 +151,8 @@ def test_cases(ptses):
         ("BAP/UCL/STR/BV-532-C", "AC 8(ii)"),
         ("BAP/UCL/STR/BV-533-C", "AC 11(i)"),
         ("BAP/UCL/STR/BV-534-C", "AC 11(ii)"),
+        ("BAP/UCL/PD/BV-01-C", "AC 6(ii)"),
+        ("BAP/UCL/PD/BV-02-C", "AC 9(ii)"),
     ]
 
     # UCL/STR/BV-001 - 128
