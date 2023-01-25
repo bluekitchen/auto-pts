@@ -7,7 +7,7 @@ from time import sleep
 from autopts.pybtp import btp
 from autopts.wid.gap import gap_wid_hdl as gen_wid_hdl, hdl_wid_139_mode1_lvl2, hdl_wid_139_mode1_lvl4
 from autopts.ptsprojects.stack import get_stack
-from autopts.pybtp.types import WIDParams, IOCap, Addr
+from autopts.pybtp.types import WIDParams, IOCap, Addr, AdType
 
 log = logging.debug
 
@@ -718,6 +718,10 @@ def hdl_wid_20100(params: WIDParams):
     btp.gap_conn(bd_addr)
     return True
 
+def hdl_wid_20001(params: WIDParams):
+    # 'Verify that the Implementation Under Test (IUT) can accept GATT connect request from PTS.'
+    # we already enabled advertisements
+    return True
 
 def hdl_wid_20106(params: WIDParams):
     # 'Please write to Client Characteristic Configuration Descriptor..'

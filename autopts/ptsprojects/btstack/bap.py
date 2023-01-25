@@ -73,50 +73,73 @@ def test_cases(ptses):
             "BAP", "TSPX_bd_addr_iut", iut_addr_get_str_spin_lock())),
     ]
 
+    # Preconditions for Unicast Server
+    # get ad to be less than 31 as btstack iut doesn't support larger adv data for extended advertisements yet
+    ad = stack.gap.ad
+    if AdType.name_short in ad:
+        del ad[AdType.name_short]
+    if AdType.name_full in ad:
+        del ad[AdType.name_full]
+    ad[AdType.name_short] = 'tester'.encode('utf-8')
+    ad[AdType.uuid16_some] = bytes([0x4E, 0x18])
+    ad[AdType.uuid16_svc_data] = bytes([0x4E, 0x18,  0x01,  0x07, 0x00,  0x00, 0x00,  0x00])
+
+    pre_conditions_unicast_server = [
+        TestFunc(btp.gap_adv_ind_on, ad=ad)
+    ]
+
     custom_test_cases = []
     test_cases_lt2 = []
     test_cases_slaves = []
 
     # Codec configuration for BAP/UCL/SCC/BV-001-C - BAP/UCL/SCC/BV-032-C
-    # PTS 8.3 shows frequency and frame duration, but not octets per frame
+    # Codec configuration for BAP/USR/SCC/BV-001-C - BAP/USR/SCC/BV-032-C
+    # PTS 8.3.3 shows frequency and frame duration, but not octets per frame
     test_codec_configurations = [
-        ("BAP/UCL/SCC/BV-001-C", "8_1"),
-        ("BAP/UCL/SCC/BV-002-C", "8_2"),
-        ("BAP/UCL/SCC/BV-003-C", "16_1"),
-        ("BAP/UCL/SCC/BV-004-C", "16_2"),
-        ("BAP/UCL/SCC/BV-005-C", "24_1"),
-        ("BAP/UCL/SCC/BV-006-C", "24_2"),
-        ("BAP/UCL/SCC/BV-007-C", "32_1"),
-        ("BAP/UCL/SCC/BV-008-C", "32_2"),
-        ("BAP/UCL/SCC/BV-009-C", "441_1"),
-        ("BAP/UCL/SCC/BV-010-C", "441_2"),
-        ("BAP/UCL/SCC/BV-011-C", "48_1"),
-        ("BAP/UCL/SCC/BV-012-C", "48_2"),
-        ("BAP/UCL/SCC/BV-013-C", "48_3"),
-        ("BAP/UCL/SCC/BV-014-C", "48_4"),
-        ("BAP/UCL/SCC/BV-015-C", "48_5"),
-        ("BAP/UCL/SCC/BV-016-C", "48_6"),
-        ("BAP/UCL/SCC/BV-017-C", "8_1"),
-        ("BAP/UCL/SCC/BV-018-C", "8_2"),
-        ("BAP/UCL/SCC/BV-019-C", "16_1"),
-        ("BAP/UCL/SCC/BV-020-C", "16_2"),
-        ("BAP/UCL/SCC/BV-021-C", "24_1"),
-        ("BAP/UCL/SCC/BV-022-C", "24_2"),
-        ("BAP/UCL/SCC/BV-023-C", "32_1"),
-        ("BAP/UCL/SCC/BV-024-C", "32_2"),
-        ("BAP/UCL/SCC/BV-025-C", "441_1"),
-        ("BAP/UCL/SCC/BV-026-C", "441_2"),
-        ("BAP/UCL/SCC/BV-027-C", "48_1"),
-        ("BAP/UCL/SCC/BV-028-C", "48_2"),
-        ("BAP/UCL/SCC/BV-029-C", "48_3"),
-        ("BAP/UCL/SCC/BV-030-C", "48_4"),
-        ("BAP/UCL/SCC/BV-031-C", "48_5"),
-        ("BAP/UCL/SCC/BV-032-C", "48_6"),
+        ("BAP/%s/SCC/BV-001-C", "8_1"),
+        ("BAP/%s/SCC/BV-002-C", "8_2"),
+        ("BAP/%s/SCC/BV-003-C", "16_1"),
+        ("BAP/%s/SCC/BV-004-C", "16_2"),
+        ("BAP/%s/SCC/BV-005-C", "24_1"),
+        ("BAP/%s/SCC/BV-006-C", "24_2"),
+        ("BAP/%s/SCC/BV-007-C", "32_1"),
+        ("BAP/%s/SCC/BV-008-C", "32_2"),
+        ("BAP/%s/SCC/BV-009-C", "441_1"),
+        ("BAP/%s/SCC/BV-010-C", "441_2"),
+        ("BAP/%s/SCC/BV-011-C", "48_1"),
+        ("BAP/%s/SCC/BV-012-C", "48_2"),
+        ("BAP/%s/SCC/BV-013-C", "48_3"),
+        ("BAP/%s/SCC/BV-014-C", "48_4"),
+        ("BAP/%s/SCC/BV-015-C", "48_5"),
+        ("BAP/%s/SCC/BV-016-C", "48_6"),
+        ("BAP/%s/SCC/BV-017-C", "8_1"),
+        ("BAP/%s/SCC/BV-018-C", "8_2"),
+        ("BAP/%s/SCC/BV-019-C", "16_1"),
+        ("BAP/%s/SCC/BV-020-C", "16_2"),
+        ("BAP/%s/SCC/BV-021-C", "24_1"),
+        ("BAP/%s/SCC/BV-022-C", "24_2"),
+        ("BAP/%s/SCC/BV-023-C", "32_1"),
+        ("BAP/%s/SCC/BV-024-C", "32_2"),
+        ("BAP/%s/SCC/BV-025-C", "441_1"),
+        ("BAP/%s/SCC/BV-026-C", "441_2"),
+        ("BAP/%s/SCC/BV-027-C", "48_1"),
+        ("BAP/%s/SCC/BV-028-C", "48_2"),
+        ("BAP/%s/SCC/BV-029-C", "48_3"),
+        ("BAP/%s/SCC/BV-030-C", "48_4"),
+        ("BAP/%s/SCC/BV-031-C", "48_5"),
+        ("BAP/%s/SCC/BV-032-C", "48_6"),
     ]
     for (test_case, codec) in test_codec_configurations:
         custom_test_cases.append(
-            ZTestCase("BAP", test_case,
+            # Unicast Client
+            ZTestCase("BAP", test_case % "UCL",
                       cmds=pre_conditions + [TestFunc(stack.le_audio_set_codec, codec)],
+                      generic_wid_hdl=bap_wid_hdl),
+        )
+        custom_test_cases.append(
+            # Unicast Server
+            ZTestCase("BAP", test_case % "USR",
+                      cmds=pre_conditions + pre_conditions_unicast_server + [TestFunc(stack.le_audio_set_codec, codec)],
                       generic_wid_hdl=bap_wid_hdl),
         )
 
