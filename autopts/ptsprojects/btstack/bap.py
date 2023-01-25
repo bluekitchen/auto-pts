@@ -154,17 +154,17 @@ def test_cases(ptses):
 
     # UCL/STR/BV-001 - 128
     for i in range(1,32, 2):
-        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % i,        "AC 1"))
-        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % (i + 64), "AC 1"))
-    for i in range(2,33, 2):
-        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % i,        "AC 4"))
-        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % (i + 64), "AC 4"))
-    for i in range(33,64, 2):
         test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % i,        "AC 2"))
         test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % (i + 64), "AC 2"))
-    for i in range(34,65, 2):
+    for i in range(2,33, 2):
         test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % i,        "AC 10"))
         test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % (i + 64), "AC 10"))
+    for i in range(33,64, 2):
+        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % i,        "AC 1"))
+        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % (i + 64), "AC 1"))
+    for i in range(34,65, 2):
+        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % i,        "AC 4"))
+        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % (i + 64), "AC 4"))
 
     for (test_case, audio_configuration) in test_audio_configurations:
         if test_case.endswith('(ii)'):
