@@ -461,7 +461,6 @@ def hdl_wid_311(params: WIDParams):
         log("Use CIS entry: %r", cis_entries[0])
 
     # Codec
-    audio_locations = 1
     for (ase_id, cis_entry) in zip(ase_ids, cis_entries):
         (frequency_hz, frame_duration_us, octets_per_frame) = le_audio_codec_get_info(codec)
         if ase_type == "SOURCE":
@@ -474,7 +473,6 @@ def hdl_wid_311(params: WIDParams):
             audio_locations = 1
         log("ASE %u, audio locations 0x%x", ase_id, audio_locations)
         btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, audio_locations, octets_per_frame)
-        audio_locations = audio_locations << 1
 
     # Use on CIG per LTs
     if params.test_case_name.endswith('LT2'):
@@ -575,15 +573,27 @@ def hdl_wid_313(params: WIDParams):
             cis_entries = cis_entries[0:1]
         log("Use CIS entry: %r", cis_entries[0])
 
+    # Assume: single CIS entry, max one source and sink ase
+
     # Codec
     for source_ase_id in source_ase_ids:
-        log("ASE SOURCE %u: codec %u, Frequency %u, frame duration %u, octets %u", source_ase_id, codec_format, frequency_hz,
-            frame_duration_us, octets_per_frame)
-        btp.ascs_configure_codec(ascs_chan_id, source_ase_id, codec_format, frequency_hz, frame_duration_us, 1, octets_per_frame)
+        channels = cis_entries[0][0]
+        if channels > 1:
+            audio_locations = 3
+        else:
+            audio_locations = 1
+        log("ASE SOURCE %u: codec %u, Frequency %u, frame duration %u, octets %u, channels %u", source_ase_id, codec_format, frequency_hz,
+            frame_duration_us, octets_per_frame, channels)
+        btp.ascs_configure_codec(ascs_chan_id, source_ase_id, codec_format, frequency_hz, frame_duration_us, audio_locations, octets_per_frame)
     for sink_ase_id in sink_ase_ids:
-        log("ASE SINK %u: codec %u, Frequency %u, frame duration %u, octets %u", sink_ase_id, codec_format, frequency_hz,
-            frame_duration_us, octets_per_frame)
-        btp.ascs_configure_codec(ascs_chan_id, sink_ase_id, codec_format, frequency_hz, frame_duration_us, 1, octets_per_frame)
+        channels = cis_entries[0][1]
+        if channels > 1:
+            audio_locations = 3
+        else:
+            audio_locations = 1
+        log("ASE SINK %u: codec %u, Frequency %u, frame duration %u, octets %u, channels %u", sink_ase_id, codec_format, frequency_hz,
+            frame_duration_us, octets_per_frame, channels)
+        btp.ascs_configure_codec(ascs_chan_id, sink_ase_id, codec_format, frequency_hz, frame_duration_us, audio_locations, octets_per_frame)
 
     # Use on CIG per LTs
     if params.test_case_name.endswith('LT2'):
@@ -615,7 +625,7 @@ def hdl_wid_313(params: WIDParams):
         btp.ascs_configure_qos(ascs_chan_id, source_ase_id, cig_id, source_cis, sdu_interval_us, framing, max_sdu_size,
                                retransmission_number, max_transport_latency_ms)
     for (sink_ase_id, sink_cis) in zip(sink_ase_ids, sink_cis_ids):
-        log("ASE SINK %u uses CIS %u", source_ase_id, source_cis)
+        log("ASE SINK %u uses CIS %u", sink_ase_id, sink_cis)
         btp.ascs_configure_qos(ascs_chan_id, sink_ase_id, cig_id, sink_cis, sdu_interval_us, framing, max_sdu_size,
                                retransmission_number, max_transport_latency_ms)
 
