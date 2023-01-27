@@ -85,6 +85,7 @@ def test_cases(ptses):
     ad[AdType.uuid16_svc_data] = bytes([0x4E, 0x18,  0x01,  0x07, 0x00,  0x00, 0x00,  0x00])
 
     pre_conditions_unicast_server = [
+        TestFunc(btp.gap_set_extended_advertising_on),
         TestFunc(btp.gap_adv_ind_on, ad=ad)
     ]
 
