@@ -144,6 +144,15 @@ def test_cases(ptses):
                       generic_wid_hdl=bap_wid_hdl),
         )
 
+    # BAP/USR/SCC/BV-033 - BAP/USR/SCC/BV-067
+    for i in range(33, 68):
+        custom_test_cases.append(
+            # Unicast Server
+            ZTestCase("BAP", "BAP/USR/SCC/BV-%03u-C" % i,
+                      cmds=pre_conditions + pre_conditions_unicast_server,
+                      generic_wid_hdl=bap_wid_hdl),
+        )
+
     # set audio configuration from BAP TS
     test_audio_configurations = [
         ("BAP/UCL/STR/BV-129-C", "AC 1"),
