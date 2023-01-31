@@ -31,7 +31,7 @@ IUT_LOG_FO = None
 # BTP communication transport: unix domain socket file name
 BTP_ADDRESS = "/tmp/bt-stack-tester"
 
-CLI_SUPPORT = ['btp_py', 'btpclient_path']
+CLI_SUPPORT = ['btpclient_path']
 
 
 def get_iut_cmd(btpclient_path):
