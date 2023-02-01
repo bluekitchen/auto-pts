@@ -130,6 +130,13 @@ def test_cases(ptses):
         ("BAP/%s/SCC/BV-031-C", "48_5"),
         ("BAP/%s/SCC/BV-032-C", "48_6"),
     ]
+
+    # list configurations
+    test_codec_configurations_new = [
+          "8_1",   "8_2", "16_1", "16_2", "24_1", "24_2", "32_1", "32_2",
+        "441_1", "441_2", "48_1", "48_2", "48_3", "48_4", "48_5", "48_6",
+    ]
+
     for (test_case, codec) in test_codec_configurations:
         custom_test_cases.append(
             # Unicast Client
@@ -144,12 +151,15 @@ def test_cases(ptses):
                       generic_wid_hdl=bap_wid_hdl),
         )
 
-    # BAP/USR/SCC/BV-033 - BAP/USR/SCC/BV-067
-    for i in range(33, 68):
+    # Codec configuration for BAP/USR/SCC/BV-033-C - BAP/USR/SCC/BV-066-C
+    test_codec_configurations_new = [
+          "8_1",   "8_2", "16_1", "16_2", "24_1", "24_2", "32_1", "32_2",
+        "441_1", "441_2", "48_1", "48_2", "48_3", "48_4", "48_5", "48_6",
+    ]
+    for (codec_id, codec_name) in zip(range(0, 33), test_codec_configurations_new + test_codec_configurations_new):
         custom_test_cases.append(
-            # Unicast Server
-            ZTestCase("BAP", "BAP/USR/SCC/BV-%03u-C" % i,
-                      cmds=pre_conditions + pre_conditions_unicast_server,
+            ZTestCase("BAP", "BAP/USR/SCC/BV-%03u-C" % (codec_id+35),
+                      cmds=pre_conditions + pre_conditions_unicast_server + [TestFunc(stack.le_audio_set_codec, codec_name)],
                       generic_wid_hdl=bap_wid_hdl),
         )
 

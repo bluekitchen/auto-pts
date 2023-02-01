@@ -162,6 +162,20 @@ def bap_wid_hdl(wid, description, test_case_name):
     except AttributeError:
         return gen_wid_hdl(wid, description, test_case_name, False)
 
+def hdl_wid_201(params: WIDParams):
+    # Please configure the CODEC parameters on ASE ID x in Audio Stream Endpoint Characteristic.
+    # we use codec info from test specification as there is no info from PTS
+    pattern = '.*on ASE ID (\d+) in Audio.*'
+    desc_match = re.match(pattern, params.description)
+    if not desc_match:
+        logging.error("parsing error")
+        return False
+    ase_id = int(desc_match.group(1))
+    stack = get_stack()
+    codec = stack.le_audio.get_codec()
+    log("ASE Codec Setting %s, ASE ID %u", codec, ase_id)
+    le_audio_configure_lc3(0, ase_id, codec, 1)
+    return True
 
 def hdl_wid_302(params: WIDParams):
     # Please configure ASE state to CODEC configured with ? ASE, Freq: ? KHz, Frame Duration: ? ms
