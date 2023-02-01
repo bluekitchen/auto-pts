@@ -93,70 +93,27 @@ def test_cases(ptses):
     test_cases_lt2 = []
     test_cases_slaves = []
 
-    # Codec configuration for BAP/UCL/SCC/BV-001-C - BAP/UCL/SCC/BV-032-C
-    # Codec configuration for BAP/USR/SCC/BV-001-C - BAP/USR/SCC/BV-032-C
-    # PTS 8.3.3 shows frequency and frame duration, but not octets per frame
-    test_codec_configurations = [
-        ("BAP/%s/SCC/BV-001-C", "8_1"),
-        ("BAP/%s/SCC/BV-002-C", "8_2"),
-        ("BAP/%s/SCC/BV-003-C", "16_1"),
-        ("BAP/%s/SCC/BV-004-C", "16_2"),
-        ("BAP/%s/SCC/BV-005-C", "24_1"),
-        ("BAP/%s/SCC/BV-006-C", "24_2"),
-        ("BAP/%s/SCC/BV-007-C", "32_1"),
-        ("BAP/%s/SCC/BV-008-C", "32_2"),
-        ("BAP/%s/SCC/BV-009-C", "441_1"),
-        ("BAP/%s/SCC/BV-010-C", "441_2"),
-        ("BAP/%s/SCC/BV-011-C", "48_1"),
-        ("BAP/%s/SCC/BV-012-C", "48_2"),
-        ("BAP/%s/SCC/BV-013-C", "48_3"),
-        ("BAP/%s/SCC/BV-014-C", "48_4"),
-        ("BAP/%s/SCC/BV-015-C", "48_5"),
-        ("BAP/%s/SCC/BV-016-C", "48_6"),
-        ("BAP/%s/SCC/BV-017-C", "8_1"),
-        ("BAP/%s/SCC/BV-018-C", "8_2"),
-        ("BAP/%s/SCC/BV-019-C", "16_1"),
-        ("BAP/%s/SCC/BV-020-C", "16_2"),
-        ("BAP/%s/SCC/BV-021-C", "24_1"),
-        ("BAP/%s/SCC/BV-022-C", "24_2"),
-        ("BAP/%s/SCC/BV-023-C", "32_1"),
-        ("BAP/%s/SCC/BV-024-C", "32_2"),
-        ("BAP/%s/SCC/BV-025-C", "441_1"),
-        ("BAP/%s/SCC/BV-026-C", "441_2"),
-        ("BAP/%s/SCC/BV-027-C", "48_1"),
-        ("BAP/%s/SCC/BV-028-C", "48_2"),
-        ("BAP/%s/SCC/BV-029-C", "48_3"),
-        ("BAP/%s/SCC/BV-030-C", "48_4"),
-        ("BAP/%s/SCC/BV-031-C", "48_5"),
-        ("BAP/%s/SCC/BV-032-C", "48_6"),
-    ]
-
-    # list configurations
+    # List of configurations
     test_codec_configurations_new = [
           "8_1",   "8_2", "16_1", "16_2", "24_1", "24_2", "32_1", "32_2",
         "441_1", "441_2", "48_1", "48_2", "48_3", "48_4", "48_5", "48_6",
     ]
 
-    for (test_case, codec) in test_codec_configurations:
-        custom_test_cases.append(
-            # Unicast Client
-            ZTestCase("BAP", test_case % "UCL",
-                      cmds=pre_conditions + [TestFunc(stack.le_audio_set_codec, codec)],
-                      generic_wid_hdl=bap_wid_hdl),
-        )
-        custom_test_cases.append(
-            # Unicast Server
-            ZTestCase("BAP", test_case % "USR",
-                      cmds=pre_conditions + pre_conditions_unicast_server + [TestFunc(stack.le_audio_set_codec, codec)],
-                      generic_wid_hdl=bap_wid_hdl),
-        )
-
-    # Codec configuration for BAP/USR/SCC/BV-033-C - BAP/USR/SCC/BV-066-C
-    test_codec_configurations_new = [
-          "8_1",   "8_2", "16_1", "16_2", "24_1", "24_2", "32_1", "32_2",
-        "441_1", "441_2", "48_1", "48_2", "48_3", "48_4", "48_5", "48_6",
-    ]
+    # Codec configuration for tests where PTS does not fully indicate codec
     for (codec_id, codec_name) in zip(range(0, 33), test_codec_configurations_new + test_codec_configurations_new):
+        # Unicast Client BAP/UCL/SCC/BV-001-C - Client BAP/UCL/SCC/BV-032-C
+        custom_test_cases.append(
+            ZTestCase("BAP", "BAP/UCL/SCC/BV-%03u-C" % (codec_id+1),
+                      cmds=pre_conditions + [TestFunc(stack.le_audio_set_codec, codec_name)],
+                      generic_wid_hdl=bap_wid_hdl),
+        )
+        # Unicast Server BAP/USR/SCC/BV-001-C - Client BAP/USR/SCC/BV-032-C
+        custom_test_cases.append(
+            ZTestCase("BAP", "BAP/USR/SCC/BV-%03u-C" % (codec_id+1),
+                      cmds=pre_conditions + pre_conditions_unicast_server + [TestFunc(stack.le_audio_set_codec, codec_name)],
+                      generic_wid_hdl=bap_wid_hdl),
+        )
+        # Unicast Server BAP/USR/SCC/BV-035-C - BAP/USR/SCC/BV-066-C
         custom_test_cases.append(
             ZTestCase("BAP", "BAP/USR/SCC/BV-%03u-C" % (codec_id+35),
                       cmds=pre_conditions + pre_conditions_unicast_server + [TestFunc(stack.le_audio_set_codec, codec_name)],
