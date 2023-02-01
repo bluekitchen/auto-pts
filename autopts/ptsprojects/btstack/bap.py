@@ -107,16 +107,32 @@ def test_cases(ptses):
                       cmds=pre_conditions + [TestFunc(stack.le_audio_set_codec, codec_name)],
                       generic_wid_hdl=bap_wid_hdl),
         )
-        # Unicast Server BAP/USR/SCC/BV-001-C - Client BAP/USR/SCC/BV-032-C
-        custom_test_cases.append(
-            ZTestCase("BAP", "BAP/USR/SCC/BV-%03u-C" % (codec_id+1),
-                      cmds=pre_conditions + pre_conditions_unicast_server + [TestFunc(stack.le_audio_set_codec, codec_name)],
-                      generic_wid_hdl=bap_wid_hdl),
-        )
         # Unicast Server BAP/USR/SCC/BV-035-C - BAP/USR/SCC/BV-066-C
         custom_test_cases.append(
             ZTestCase("BAP", "BAP/USR/SCC/BV-%03u-C" % (codec_id+35),
                       cmds=pre_conditions + pre_conditions_unicast_server + [TestFunc(stack.le_audio_set_codec, codec_name)],
+                      generic_wid_hdl=bap_wid_hdl),
+        )
+
+
+    test_cases_server = [
+        "BAP/USR/SCC/BV-067-C",
+        "BAP/USR/SCC/BV-068-C",
+        "BAP/USR/SCC/BV-135-C",
+        "BAP/USR/SCC/BV-136-C"]
+
+    for codec_id in range(0,33):
+        # Unicast Server BAP/USR/SCC/BV-001-C - Client BAP/USR/SCC/BV-032-C
+        test_cases_server.append("BAP/USR/SCC/BV-%03u-C" % (codec_id+1))
+        # Unicast Server BAP/USR/SCC/BV-069-C - BAP/USR/SCC/BV-100-C
+        test_cases_server.append("BAP/USR/SCC/BV-%03u-C" % (codec_id+69))
+        # Unicast Server BAP/USR/SCC/BV-101-C - BAP/USR/SCC/BV-132-C
+        test_cases_server.append("BAP/USR/SCC/BV-%03u-C" % (codec_id+101))
+
+    for test_case_name in test_cases_server:
+        custom_test_cases.append(
+            ZTestCase("BAP", test_case_name,
+                      cmds=pre_conditions + pre_conditions_unicast_server,
                       generic_wid_hdl=bap_wid_hdl),
         )
 

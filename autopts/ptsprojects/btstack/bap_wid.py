@@ -177,6 +177,17 @@ def hdl_wid_201(params: WIDParams):
     le_audio_configure_lc3(0, ase_id, codec, 1)
     return True
 
+def hdl_wid_202(params: WIDParams):
+    # Please start audio streaming, and set to Audio Stream Endpoint to STREAMING state for ASE ID x
+    pattern = '.*on ASE ID (\d+) in Audio.*'
+    desc_match = re.match(pattern, params.description)
+    if not desc_match:
+        logging.error("parsing error")
+        return False
+    ase_id = int(desc_match.group(1))
+    # TODO: start streaming
+    return True
+
 def hdl_wid_302(params: WIDParams):
     # Please configure ASE state to CODEC configured with ? ASE, Freq: ? KHz, Frame Duration: ? ms
     # we use codec info from test specification as octets per frame is not provided by PTS
