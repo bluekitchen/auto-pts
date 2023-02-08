@@ -179,13 +179,56 @@ def hdl_wid_201(params: WIDParams):
 
 def hdl_wid_202(params: WIDParams):
     # Please start audio streaming, and set to Audio Stream Endpoint to STREAMING state for ASE ID x
+    pattern = '.*for ASE ID (\d+)\.'
+    desc_match = re.match(pattern, params.description)
+    if not desc_match:
+        logging.error("parsing error")
+        return False
+    ase_id = int(desc_match.group(1))
+    return True
+
+def hdl_wid_204(params: WIDParams):
+    # Please initiate Server initiated DISABLE operation on ASE ID x in Audio Stream Endpoint Characteristic.
     pattern = '.*on ASE ID (\d+) in Audio.*'
     desc_match = re.match(pattern, params.description)
     if not desc_match:
         logging.error("parsing error")
         return False
     ase_id = int(desc_match.group(1))
-    # TODO: start streaming
+    btp.ascs_disable(0, ase_id)
+    return True
+
+def hdl_wid_206(params: WIDParams):
+    # Please initiate RELEASE operation on ASE ID x in Audio Stream Endpoint Characteristic.
+    pattern = '.*on ASE ID (\d+) in Audio.*'
+    desc_match = re.match(pattern, params.description)
+    if not desc_match:
+        logging.error("parsing error")
+        return False
+    ase_id = int(desc_match.group(1))
+    btp.ascs_release(0, ase_id)
+    return True
+
+def hdl_wid_207(params: WIDParams):
+    # Please initiate META UPDATE operation on ASE ID 3 in Audio Stream Endpoint Characteristic.
+    pattern = '.*on ASE ID (\d+) in Audio.*'
+    desc_match = re.match(pattern, params.description)
+    if not desc_match:
+        logging.error("parsing error")
+        return False
+    ase_id = int(desc_match.group(1))
+    btp.ascs_update_metadata(0, ase_id)
+    return True
+
+def hdl_wid_208(params: WIDParams):
+    # Lower tester is waiting RELEASED operation (IDLE or CODEC Configured state) on ASE ID x in Audio Stream Endpoint Characteristic.
+    pattern = '.*on ASE ID (\d+) in Audio.*'
+    desc_match = re.match(pattern, params.description)
+    if not desc_match:
+        logging.error("parsing error")
+        return False
+    ase_id = int(desc_match.group(1))
+    # IUT will automatically perform RELEASED operation
     return True
 
 def hdl_wid_302(params: WIDParams):
@@ -735,6 +778,13 @@ def hdl_wid_364(params: WIDParams):
     # After processed audio stream data, please click OK.
     return True
 
+def hdl_wid_376(params: WIDParams):
+    # Please confirm received streaming data...'
+    return True
+
+def hdl_wid_382(params: WIDParams):
+    # CIS connection is disconnected. Expect to receive Disabling state.
+    return True
 
 def hdl_wid_20100(params: WIDParams):
     # 'Please initiate a GATT connection to the PTS.'

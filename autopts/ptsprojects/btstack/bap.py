@@ -118,8 +118,7 @@ def test_cases(ptses):
     test_cases_server = [
         "BAP/USR/SCC/BV-067-C",
         "BAP/USR/SCC/BV-068-C",
-        "BAP/USR/SCC/BV-135-C",
-        "BAP/USR/SCC/BV-136-C"]
+    ]
 
     for codec_id in range(0,33):
         # Unicast Server BAP/USR/SCC/BV-001-C - Client BAP/USR/SCC/BV-032-C
@@ -128,6 +127,14 @@ def test_cases(ptses):
         test_cases_server.append("BAP/USR/SCC/BV-%03u-C" % (codec_id+69))
         # Unicast Server BAP/USR/SCC/BV-101-C - BAP/USR/SCC/BV-132-C
         test_cases_server.append("BAP/USR/SCC/BV-%03u-C" % (codec_id+101))
+
+    # BAP/USR/SCC/BV-135-C -BAP/UCL/SCC/BV-135-C
+    for test_number in range(135,169):
+        test_cases_server.append("BAP/USR/SCC/BV-%03u-C" % test_number)
+
+    # BAP/USR/STR/BV-001-C - BAP/USR/STR/BV-128-C
+    for test_number in range(1,133):
+        test_cases_server.append("BAP/USR/STR/BV-%03u-C" % test_number)
 
     for test_case_name in test_cases_server:
         custom_test_cases.append(
@@ -185,23 +192,41 @@ def test_cases(ptses):
         test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % i,        "AC 4"))
         test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % (i + 64), "AC 4"))
 
+    # USR/STR/BV-001 - 128
+    for i in range(1,32, 2):
+        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % i,        "AC 1"))
+        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % (i + 64), "AC 1"))
+    for i in range(2,33, 2):
+        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % i,        "AC 4"))
+        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % (i + 64), "AC 4"))
+    for i in range(33,64, 2):
+        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % i,        "AC 2"))
+        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % (i + 64), "AC 2"))
+    for i in range(34,65, 2):
+        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % i,        "AC 10"))
+        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % (i + 64), "AC 10"))
+
     for (test_case, audio_configuration) in test_audio_configurations:
+        additional_preconditions = []
+        if "/USR/" in test_case:
+            # additional_preconditions.append(pre_conditions_unicast_server)
+            continue
         if test_case.endswith('(ii)'):
             lt2_name = test_case + '_LT2'
             test_cases_lt2.append(
                 ZTestCase("BAP", test_case,
-                    cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
+                    cmds=pre_conditions + additional_preconditions + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
                     generic_wid_hdl=bap_wid_hdl,
                     lt2=lt2_name))
             test_cases_slaves.append(
                 ZTestCaseSlave("BAP", lt2_name,
-                    cmds=pre_conditions_lt2 + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
+                    cmds=pre_conditions_lt2 + additional_preconditions + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
                     generic_wid_hdl=bap_wid_hdl)
                 )
         else:
             custom_test_cases.append(
                 ZTestCase("BAP", test_case,
-                      cmds=pre_conditions + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
+                      cmds=pre_conditions + additional_preconditions + [TestFunc(stack.le_audio_set_audio_configuration, audio_configuration)],
                       generic_wid_hdl=bap_wid_hdl))
 
 
