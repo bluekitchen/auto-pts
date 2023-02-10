@@ -782,6 +782,10 @@ def hdl_wid_376(params: WIDParams):
     # Please confirm received streaming data...'
     return True
 
+def hdl_wid_377(params: WIDParams):
+    # Please confirm sent streaming data...
+    return True
+
 def hdl_wid_382(params: WIDParams):
     # CIS connection is disconnected. Expect to receive Disabling state.
     return True

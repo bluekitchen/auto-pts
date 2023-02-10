@@ -133,8 +133,8 @@ def test_cases(ptses):
         test_cases_server.append("BAP/USR/SCC/BV-%03u-C" % test_number)
 
     # BAP/USR/STR/BV-001-C - BAP/USR/STR/BV-128-C
-    for test_number in range(1,133):
-        test_cases_server.append("BAP/USR/STR/BV-%03u-C" % test_number)
+    # for test_number in range(1,133):
+    #     test_cases_server.append("BAP/USR/STR/BV-%03u-C" % test_number)
 
     for test_case_name in test_cases_server:
         custom_test_cases.append(
@@ -207,10 +207,12 @@ def test_cases(ptses):
         test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % (i + 64), "AC 10"))
 
     for (test_case, audio_configuration) in test_audio_configurations:
+
+        # add server pre_condition
         additional_preconditions = []
         if "/USR/" in test_case:
-            # additional_preconditions.append(pre_conditions_unicast_server)
-            continue
+            additional_preconditions = pre_conditions_unicast_server
+
         if test_case.endswith('(ii)'):
             lt2_name = test_case + '_LT2'
             test_cases_lt2.append(
