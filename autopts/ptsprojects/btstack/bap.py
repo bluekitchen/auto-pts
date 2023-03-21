@@ -115,29 +115,9 @@ def test_cases(ptses):
                       generic_wid_hdl=bap_wid_hdl),
         )
 
-
-    test_cases_server = [
-        "BAP/USR/SCC/BV-067-C",
-        "BAP/USR/SCC/BV-068-C",
-    ]
-
-    for codec_id in range(0,33):
-        # Unicast Server BAP/USR/SCC/BV-001-C - Client BAP/USR/SCC/BV-032-C
-        test_cases_server.append("BAP/USR/SCC/BV-%03u-C" % (codec_id+1))
-        # Unicast Server BAP/USR/SCC/BV-069-C - BAP/USR/SCC/BV-100-C
-        test_cases_server.append("BAP/USR/SCC/BV-%03u-C" % (codec_id+69))
-        # Unicast Server BAP/USR/SCC/BV-101-C - BAP/USR/SCC/BV-132-C
-        test_cases_server.append("BAP/USR/SCC/BV-%03u-C" % (codec_id+101))
-
-    # BAP/USR/SCC/BV-135-C -BAP/UCL/SCC/BV-135-C
-    for test_number in range(135,169):
-        test_cases_server.append("BAP/USR/SCC/BV-%03u-C" % test_number)
-
-    # BAP/USR/STR/BV-001-C - BAP/USR/STR/BV-128-C
-    # for test_number in range(1,133):
-    #     test_cases_server.append("BAP/USR/STR/BV-%03u-C" % test_number)
-
-    for test_case_name in test_cases_server:
+    # Unicast Server BAP/USR/SCC/BV-001-C - Client BAP/USR/SCC/BV-168-C
+    for i in range(1,169):
+        test_case_name = "BAP/USR/SCC/BV-%03u-C" % i
         custom_test_cases.append(
             ZTestCase("BAP", test_case_name,
                       cmds=pre_conditions + pre_conditions_unicast_server,
