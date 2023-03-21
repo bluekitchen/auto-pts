@@ -32,6 +32,7 @@ def set_pixits(ptses):
 
         # Needed to pass BAP/UCL/SCC/BV-033-C, BAP/UCL/SCC/BV-034-C, ..
         pts.set_pixit("BAP", "TSPX_Codec_ID", "FF00000000")
+        pts.set_pixit("BAP", "TSPX_VS_Codec_Specific_Configuration", "02010102020005030100000003041A00")
 
 
 # When called by LT2, BD ADDR might not be set, let's wait until it becomes ready
