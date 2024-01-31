@@ -160,37 +160,36 @@ def test_cases(ptses):
         ("BAP/UCL/STR/BV-534-C", "AC 11(ii)"),
         ("BAP/UCL/STR/BV-536-C", "AC 10"),
         ("BAP/UCL/STR/BV-538-C", "AC 4"),
+        ("BAP/UCL/STR/BV-540-C", "AC 10"),
+        ("BAP/UCL/STR/BV-542-C", "AC 4"),
+        ("BAP/UCL/STR/BV-543-C", "AC 3"),
+        ("BAP/UCL/STR/BV-544-C", "AC 5"),
+        ("BAP/UCL/STR/BV-545-C", "AC 7(i)"),
+        ("BAP/UCL/STR/BV-546-C", "AC 3"),
+        ("BAP/UCL/STR/BV-547-C", "AC 5"),
+        ("BAP/UCL/STR/BV-548-C", "AC 7(i)"),
+        ("BAP/UCL/STR/BV-549-C", "AC 3"),
+        ("BAP/UCL/STR/BV-550-C", "AC 5"),
+        ("BAP/UCL/STR/BV-551-C", "AC 7(i)"),
+        ("BAP/UCL/STR/BV-552-C", "AC 2"),
+        ("BAP/UCL/STR/BV-553-C", "AC 2"),
+        ("BAP/UCL/STR/BV-554-C", "AC 2"),
+        ("BAP/UCL/STR/BV-555-C", "AC 2"),
+        ("BAP/UCL/STR/BV-556-C", "AC 1"),
+        ("BAP/UCL/STR/BV-557-C", "AC 1"),
+        ("BAP/UCL/STR/BV-558-C", "AC 1"),
+        ("BAP/UCL/STR/BV-559-C", "AC 1"),
+        ("BAP/UCL/STR/BV-560-C", "AC 2"),
+        ("BAP/UCL/STR/BV-561-C", "AC 2"),
+        ("BAP/UCL/STR/BV-562-C", "AC 2"),
+        ("BAP/UCL/STR/BV-563-C", "AC 2"),
+        ("BAP/UCL/STR/BV-564-C", "AC 1"),
+        ("BAP/UCL/STR/BV-565-C", "AC 1"),
+        ("BAP/UCL/STR/BV-566-C", "AC 1"),
+        ("BAP/UCL/STR/BV-567-C", "AC 1"),
         ("BAP/UCL/PD/BV-01-C", "AC 6(ii)"),
         ("BAP/UCL/PD/BV-02-C", "AC 9(ii)"),
     ]
-
-    # UCL/STR/BV-001 - 128
-    for i in range(1,32, 2):
-        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % i,        "AC 2"))
-        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % (i + 64), "AC 2"))
-    for i in range(2,33, 2):
-        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % i,        "AC 10"))
-        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % (i + 64), "AC 10"))
-    for i in range(33,64, 2):
-        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % i,        "AC 1"))
-        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % (i + 64), "AC 1"))
-    for i in range(34,65, 2):
-        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % i,        "AC 4"))
-        test_audio_configurations.append(('BAP/UCL/STR/BV-%03u-C' % (i + 64), "AC 4"))
-
-    # USR/STR/BV-001 - 128
-    for i in range(1,32, 2):
-        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % i,        "AC 1"))
-        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % (i + 64), "AC 1"))
-    for i in range(2,33, 2):
-        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % i,        "AC 4"))
-        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % (i + 64), "AC 4"))
-    for i in range(33,64, 2):
-        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % i,        "AC 2"))
-        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % (i + 64), "AC 2"))
-    for i in range(34,65, 2):
-        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % i,        "AC 10"))
-        test_audio_configurations.append(('BAP/USR/STR/BV-%03u-C' % (i + 64), "AC 10"))
 
     for (test_case, audio_configuration) in test_audio_configurations:
 
