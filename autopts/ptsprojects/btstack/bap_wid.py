@@ -567,10 +567,6 @@ def hdl_wid_311(params: WIDParams):
         btp.ascs_configure_qos(ascs_chan_id, ase_id, cig_id, cis_id, sdu_interval_us, framing, max_sdu_size, retransmission_number, max_transport_latency_ms)
         cis_id += 1
 
-    # Enable
-    for ase_id in ase_ids:
-        btp.ascs_enable(ascs_chan_id, ase_id)
-
     # CIS
     cis_id = 1
     cis_associations = []
@@ -578,6 +574,13 @@ def hdl_wid_311(params: WIDParams):
         cis_associations.append((cis_id, Addr.le_public, bd_addr))
         cis_id += 1
     btp.cis_create(cig_id, cis_associations)
+
+    # "Wait" for ASE State STREAMING
+    sleep(1)
+
+    # Enable
+    for ase_id in ase_ids:
+        btp.ascs_enable(ascs_chan_id, ase_id)
 
     # "Wait" for ASE State STREAMING
     sleep(1)

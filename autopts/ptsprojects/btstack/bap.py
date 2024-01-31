@@ -158,6 +158,8 @@ def test_cases(ptses):
         ("BAP/UCL/STR/BV-532-C", "AC 8(ii)"),
         ("BAP/UCL/STR/BV-533-C", "AC 11(i)"),
         ("BAP/UCL/STR/BV-534-C", "AC 11(ii)"),
+        ("BAP/UCL/STR/BV-536-C", "AC 10"),
+        ("BAP/UCL/STR/BV-538-C", "AC 4"),
         ("BAP/UCL/PD/BV-01-C", "AC 6(ii)"),
         ("BAP/UCL/PD/BV-02-C", "AC 9(ii)"),
     ]
