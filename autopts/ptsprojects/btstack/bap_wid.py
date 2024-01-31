@@ -652,7 +652,7 @@ def hdl_wid_313(params: WIDParams):
         if channels > 1:
             audio_locations = 3
         else:
-            audio_locations = 1
+            audio_locations = 0
         log("ASE SOURCE %u: codec %u, Frequency %u, frame duration %u, octets %u, channels %u", source_ase_id, codec_format, frequency_hz,
             frame_duration_us, octets_per_frame, channels)
         btp.ascs_configure_codec(ascs_chan_id, source_ase_id, codec_format, frequency_hz, frame_duration_us, audio_locations, octets_per_frame)
@@ -661,7 +661,7 @@ def hdl_wid_313(params: WIDParams):
         if channels > 1:
             audio_locations = 3
         else:
-            audio_locations = 1
+            audio_locations = 0
         log("ASE SINK %u: codec %u, Frequency %u, frame duration %u, octets %u, channels %u", sink_ase_id, codec_format, frequency_hz,
             frame_duration_us, octets_per_frame, channels)
         btp.ascs_configure_codec(ascs_chan_id, sink_ase_id, codec_format, frequency_hz, frame_duration_us, audio_locations, octets_per_frame)
@@ -701,8 +701,6 @@ def hdl_wid_313(params: WIDParams):
                                retransmission_number, max_transport_latency_ms)
 
     # Enable
-    for source_ase_id in source_ase_ids:
-        btp.ascs_enable(ascs_chan_id, source_ase_id)
     for sink_ase_id in sink_ase_ids:
         btp.ascs_enable(ascs_chan_id, sink_ase_id)
 
@@ -713,6 +711,13 @@ def hdl_wid_313(params: WIDParams):
         cis_associations.append((cis_id, Addr.le_public, bd_addr))
         cis_id += 1
     btp.cis_create(cig_id, cis_associations)
+
+    # "Wait" for CIS established
+    sleep(1)
+
+    # Enable
+    for source_ase_id in source_ase_ids:
+        btp.ascs_enable(ascs_chan_id, source_ase_id)
 
     for source_ase_id in source_ase_ids:
         # send receiver ready if we are sink
