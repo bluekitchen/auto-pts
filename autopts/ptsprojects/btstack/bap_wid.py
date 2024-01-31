@@ -538,7 +538,7 @@ def hdl_wid_311(params: WIDParams):
         if channels > 1:
             audio_locations = 3
         else:
-            audio_locations = 1
+            audio_locations = 0
         log("ASE %u, audio locations 0x%x", ase_id, audio_locations)
         btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, audio_locations, octets_per_frame)
 
