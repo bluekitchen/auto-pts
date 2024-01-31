@@ -1,5 +1,6 @@
 """BAP test cases"""
 from time import sleep
+import logging
 
 from autopts.pybtp import btp
 from autopts.pybtp.types import Addr, IOCap, AdType, AdFlags, Prop, Perm, UUID
@@ -16,6 +17,8 @@ iut_svc_data = '1111'
 iut_flags = '04'
 iut_svcs = '1111'
 iut_attr_db_off = 0x000b
+
+log = logging.debug
 
 def set_pixits(ptses):
     """Setup profile PIXITS for workspace. Those values are used for test

@@ -374,11 +374,11 @@ def hdl_wid_305(params: WIDParams):
     # Enable
     btp.ascs_enable(ascs_chan_id, ase_id)
 
-    # PTS 8.3 does not continue, let's assume we have to first enter streaming and then disable the stream
-    btp.ascs_receiver_start_ready(ascs_chan_id, ase_id)
+    # "Wait" for ASE State ENABLING and Metadata update
+    sleep(1)
 
-    # ???
-    # btp.ascs_disable(ascs_chan_id, ase_id)
+    # Disable
+    btp.ascs_disable(ascs_chan_id, ase_id)
 
     # BAP/UCL/SCC/BV-113
     btp.ascs_release(ascs_chan_id, ase_id)
