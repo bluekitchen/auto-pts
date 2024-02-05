@@ -134,6 +134,12 @@ def le_audio_configure_lc3(ascs_chan_id, ase_id, codec, audio_locations):
     log("ASE Codec LC3 %s: frequency %u hz, frame duration %u us, octets per frame %u", codec, frequency_hz, frame_duration_us, octets_per_frame)
     btp.ascs_configure_codec(ascs_chan_id, ase_id, 6, frequency_hz, frame_duration_us, audio_locations, octets_per_frame)
 
+def le_audio_configure_custom(ascs_chan_id, ase_id, codec, audio_locations):
+    frequency_hz = 48000
+    frame_duration_us = 10000
+    octets_per_frame = 100
+    log("ASE Codec Custom %s: frequency %u hz, frame duration %u us, octets per frame %u", codec, frequency_hz, frame_duration_us, octets_per_frame)
+    btp.ascs_configure_codec(ascs_chan_id, ase_id, 0xff, frequency_hz, frame_duration_us, audio_locations, octets_per_frame)
 
 def le_audio_configure_qos(ascs_chan_id, codec, qos, audio_conffiguration, ):
     # configure codec
@@ -164,7 +170,7 @@ def bap_wid_hdl(wid, description, test_case_name):
 
 def hdl_wid_201(params: WIDParams):
     # Please configure the CODEC parameters on ASE ID x in Audio Stream Endpoint Characteristic.
-    # we use codec info from test specification as there is no info from PTS
+    # we select custom codec
     pattern = '.*on ASE ID (\d+) in Audio.*'
     desc_match = re.match(pattern, params.description)
     if not desc_match:
@@ -174,7 +180,7 @@ def hdl_wid_201(params: WIDParams):
     stack = get_stack()
     codec = stack.le_audio.get_codec()
     log("ASE Codec Setting %s, ASE ID %u", codec, ase_id)
-    le_audio_configure_lc3(0, ase_id, codec, 1)
+    le_audio_configure_custom(0, ase_id, codec, 1)
     return True
 
 def hdl_wid_202(params: WIDParams):
