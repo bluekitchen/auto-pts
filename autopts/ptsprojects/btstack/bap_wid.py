@@ -792,6 +792,14 @@ def hdl_wid_364(params: WIDParams):
     # After processed audio stream data, please click OK.
     return True
 
+def hdl_wid_366(params: WIDParams):
+    # Please click ok when IUT received and sent audio stream data
+    return True
+
+def hdl_wid_367(params: WIDParams):
+    # Lower tester is streaming audio data.
+    return True
+
 def hdl_wid_376(params: WIDParams):
     # Please confirm received streaming data...'
     return True
@@ -802,6 +810,11 @@ def hdl_wid_377(params: WIDParams):
 
 def hdl_wid_382(params: WIDParams):
     # CIS connection is disconnected. Expect to receive Disabling state.
+    return True
+
+def hdl_wid_2000(params: WIDParams):
+    # 'Please enter the secure ID'
+    # we auto-accept pairing
     return True
 
 def hdl_wid_20100(params: WIDParams):

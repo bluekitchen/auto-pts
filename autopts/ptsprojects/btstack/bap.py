@@ -218,12 +218,19 @@ def test_cases(ptses):
 
 
     test_case_name_list = pts_lt1.get_test_case_list('BAP')
+    test_case_name_list.sort()
     tc_list = []
 
     for tc_name in test_case_name_list:
+
+        # add server pre_condition
+        additional_preconditions = []
+        if "/USR/" in tc_name:
+            additional_preconditions = pre_conditions_unicast_server
+
         # setup generic test case with pre_condition and bap wid hdl()
         instance = ZTestCase("BAP", tc_name,
-                             cmds=pre_conditions,
+                             cmds=pre_conditions + additional_preconditions,
                              generic_wid_hdl=bap_wid_hdl)
 
         # use custom test case if defined above
