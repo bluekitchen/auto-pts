@@ -18,3 +18,4 @@
 import autopts.ptsprojects.btstack.bap
 import autopts.ptsprojects.btstack.cap
 import autopts.ptsprojects.btstack.tmap
+# GENERATOR append 1
