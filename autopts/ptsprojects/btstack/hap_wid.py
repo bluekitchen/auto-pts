@@ -1,7 +1,7 @@
 #
 # auto-pts - The Bluetooth PTS Automation Framework
 #
-# Copyright (c) 2017, Intel Corporation.
+# Copyright (c) 2023, Oticon.
 #
 # This program is free software; you can redistribute it and/or modify it
 # under the terms and conditions of the GNU General Public License,
@@ -13,12 +13,14 @@
 # more details.
 #
 
-"""Automated PTS projects (bluetooth profiles and protocols) for BTstack IUT"""
+import logging
 
-import autopts.ptsprojects.btstack.bap
-import autopts.ptsprojects.btstack.cap
-import autopts.ptsprojects.btstack.hap
-import autopts.ptsprojects.btstack.pbp
-import autopts.ptsprojects.btstack.pbp
-import autopts.ptsprojects.btstack.tmap
-# GENERATOR append 1
+from autopts.wid import generic_wid_hdl
+
+log = logging.debug
+
+
+def hap_wid_hdl(wid, description, test_case_name):
+    log(f'{hap_wid_hdl.__name__}, {wid}, {description}, {test_case_name}')
+    return generic_wid_hdl(wid, description, test_case_name, [__name__, 'autopts.wid.hap'])
+
