@@ -115,4 +115,5 @@ ID  Name
  28 TMAP Service
  29 OTS Service
  30 PBP Service
+ 31 GMAP Service
  # GENERATOR append 1
