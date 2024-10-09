@@ -583,15 +583,51 @@ def hdl_wid_364(_: WIDParams):
     return True
 
 
+def hdl_wid_366(_: WIDParams):
+    """
+    Please click ok when IUT received and sent audio stream data.
+    """
+
+    return True
+
+def hdl_wid_367(_: WIDParams):
+    """
+    Lower tester is streaming audio data.
+    """
+
+    return True
+
+
+def hdl_wid_376(_: WIDParams):
+    """
+    Please confirm received streaming data...
+    """
+
+    return True
+
+
+def hdl_wid_387(_: WIDParams):
+    """
+    Please send valid streaming data.
+    """
+
+    return True
+
+
+def hdl_wid_554(_: WIDParams):
+    """
+    Please click ok when the tester is ready to start CAP Unicast Audio Starting procedure.
+    """
+
+    return True
+
+
 def hdl_wid_558(_: WIDParams):
     """
     Please click ok if the IUT is in streaming state.
     """
 
-    # ToDo: verify streaming state
-
     return True
-
 
 
 def hdl_wid_20100(params: WIDParams):
@@ -610,6 +646,15 @@ def hdl_wid_20100(params: WIDParams):
     btp.gap_conn(addr, addr_type)
     stack.gap.wait_for_connection(timeout=10, addr=addr)
     stack.gap.gap_wait_for_sec_lvl_change(level=2, timeout=30, addr=addr)
+
+    return True
+
+
+def hdl_wid_20001(_: WIDParams):
+    """
+        Please prepare IUT into a connectable mode.
+        Description: Verify that the Implementation Under Test (IUT) can accept GATT connect request from PTS.
+    """
 
     return True
 

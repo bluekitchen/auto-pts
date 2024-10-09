@@ -12,6 +12,7 @@
 # FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
 # more details.
 #
+import struct
 
 from autopts.ptsprojects.stack import get_stack, SynchPoint
 from autopts.ptsprojects.testcase import TestFunc
@@ -19,8 +20,19 @@ from autopts.ptsprojects.btstack.ztestcase import ZTestCase, ZTestCaseSlave
 from autopts.pybtp import btp
 from autopts.ptsprojects.btstack.gmap_wid import gmap_wid_hdl
 from autopts.client import get_unique_name
-from autopts.pybtp.types import Addr
+from autopts.pybtp.types import Addr, AdType
 from autopts.utils import ResultWithFlag
+
+from enum import IntEnum
+
+
+class Uuid(IntEnum):
+    ASCS = 0x184E
+    BASS = 0x184F
+    PACS = 0x1850
+    BAAS = 0x1852
+    CAS  = 0x1853
+    GMAS = 0x1858
 
 
 def set_pixits(ptses):
@@ -28,6 +40,7 @@ def set_pixits(ptses):
 
     pts.set_pixit("GMAP", "TSPX_time_guard", "180000")
     pts.set_pixit("GMAP", "TSPX_use_implicit_send", "TRUE")
+    pts.set_pixit("GMAP", "TSPX_delete_ltk", "TRUE")
 
 
 def sync_commands_for_wid_list(tc_name, wids):
@@ -68,6 +81,8 @@ def test_cases(ptses):
         TestFunc(btp.set_pts_addr, pts_bd_addr, Addr.le_public),
         TestFunc(btp.core_reg_svc_gatt),
         TestFunc(stack.gatt_init),
+        TestFunc(btp.gap_set_conn),
+        TestFunc(btp.gap_set_gendiscov),
         TestFunc(btp.core_reg_svc_pacs),
         TestFunc(stack.pacs_init),
         TestFunc(btp.core_reg_svc_ascs),
@@ -78,9 +93,18 @@ def test_cases(ptses):
         TestFunc(stack.cap_init),
         TestFunc(btp.core_reg_svc_gmap),
         TestFunc(stack.gmap_init),
+        TestFunc(btp.gap_set_extended_advertising_on),
         # Gives a signal to the LT2 to continue its preconditions
         TestFunc(lambda: set_addr(stack.gap.iut_addr_get_str())),
     ]
+
+    # Setup Advertising Data for UGT
+    adv_data, rsp_data = {}, {}
+    # - Incomplete UUIDs: ASCS
+    adv_data[AdType.uuid16_some] = [struct.pack('<H', Uuid.ASCS)]
+    # - Service Data: ASCS { Targeted Announcement, Sink Contexts, Source Contexts, Metadata]
+    adv_data[AdType.uuid16_svc_data] = [struct.pack('<HBHHB', Uuid.ASCS, 0x01, 0x000d, 0x000d, 0)]
+    setup_advertising = [TestFunc(btp.gap_adv_ind_on, ad=adv_data, sd=rsp_data)]
 
     test_case_name_list = pts.get_test_case_list('GMAP')
     tc_list = []
@@ -131,15 +155,18 @@ def test_cases(ptses):
         "GMAP/UGG/LLU/BV-50-C":  (313, 313),
     }
 
-    # For test case with 2 LTs, specify the correct WID to sync
     for tc_name in test_case_name_list:
         if tc_name in test_cases_with_lt2:
+            # For test case with 2 LTs, specify the correct WID to sync
             tc_name_lt2 = tc_name + "_LT2"
             wid_lt1, wid_lt2 = test_cases_with_lt2[tc_name]
             instance = ZTestCase('GMAP', tc_name,
                                  cmds=pre_conditions +
                                       sync_commands_for_wid_list(tc_name, [(20100, 20100), (20106, 20106), (wid_lt1, wid_lt2)]),
                                  generic_wid_hdl=gmap_wid_hdl, lt2=tc_name_lt2)
+        elif tc_name.startswith("GMAP/UGT"):
+            # For tests where we're peripheral, enable advertisements
+            instance = ZTestCase('GMAP', tc_name, cmds=pre_conditions + setup_advertising, generic_wid_hdl=gmap_wid_hdl)
         else:
             instance = ZTestCase('GMAP', tc_name, cmds=pre_conditions, generic_wid_hdl=gmap_wid_hdl)
         tc_list.append(instance)
