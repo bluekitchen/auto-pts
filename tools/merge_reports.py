@@ -13,8 +13,8 @@ date_format_xml = "%A, %B %d, %Y, %H:%M:%S"
 date_format_files = '%Y_%m_%d_%H_%M_%S'
 
 # processing instruction in report header
-report_header = '''
-<?xml-stylesheet type='text/css' href='file:///C:\\Program Files (x86)\Bluetooth SIG\Bluetooth PTS\\bin\\ReportStylesheet.css'?>
+report_header = r'''
+<?xml-stylesheet type='text/css' href='file:///C:\Program Files (x86)\Bluetooth SIG\Bluetooth PTS\bin\ReportStylesheet.css'?>
 <?xml-stylesheet type='text/css' href='http://www.bluetooth.org/pts/ref/ReportStylesheetWeb.css'?>
 '''
 
